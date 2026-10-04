@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MenuItem, Order, OrderDetail, PaymentMethod } from '../../types/pos';
 import { posService } from '../../services/posService';
 import { formatRupiah, playNotificationChime } from '../../utils/formatters';
@@ -59,30 +59,37 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [showOrderSuccessModal, setShowOrderSuccessModal] = useState(false);
 
-  const reloadData = () => {
+  const reloadData = async () => {
     setCategories(posService.getCategories());
     setMenuItems(posService.getMenuItems());
 
-    if (activeOrder) {
-      const refreshed = posService.getOrderById(activeOrder.id);
-      if (refreshed) {
-        if (refreshed.kitchenStatus !== activeOrder.kitchenStatus) {
-          if (refreshed.kitchenStatus === 'READY') {
-            playNotificationChime('ready');
-          } else if (refreshed.kitchenStatus === 'COMPLETED') {
-            playNotificationChime('complete');
+    try {
+      if (activeOrder) {
+        const refreshed = await posService.getOrderById(activeOrder.id);
+        if (refreshed) {
+          if (refreshed.kitchenStatus !== activeOrder.kitchenStatus) {
+            if (refreshed.kitchenStatus === 'READY') {
+              playNotificationChime('ready');
+            } else if (refreshed.kitchenStatus === 'COMPLETED') {
+              playNotificationChime('complete');
+            }
           }
+          setActiveOrder(refreshed);
         }
-        setActiveOrder(refreshed);
+      } else {
+        const allOrders = await posService.getOrders();
+        const existing = allOrders.find(
+          (o) =>
+            o.tableNumber === tableNumber &&
+            o.kitchenStatus !== 'COMPLETED' &&
+            o.kitchenStatus !== 'CANCELLED'
+        );
+        if (existing) {
+          setActiveOrder(existing);
+        }
       }
-    } else {
-      const allOrders = posService.getOrders();
-      const existing = allOrders.find(
-        (o) => o.tableNumber === tableNumber && o.kitchenStatus !== 'COMPLETED'
-      );
-      if (existing) {
-        setActiveOrder(existing);
-      }
+    } catch (err) {
+      console.error('Failed to refresh orders', err);
     }
   };
 
@@ -171,25 +178,30 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
     if (cart.length === 0) return;
     setIsCheckingOut(true);
 
-    setTimeout(() => {
-      const order = posService.createOrder({
-        orderType,
-        tableNumber: orderType === 'dine_in' ? tableNumber : undefined,
-        items: cart,
-        paymentMethod,
-        paymentStatus: paymentMethod === 'qris' ? 'PAID' : 'UNPAID',
-        createdByRole: 'customer',
-        createdByName: `Customer (Table ${tableNumber})`,
-        customerNote: orderType === 'dine_in' ? `Table ${tableNumber}` : 'Take Away',
-      });
-
-      setCart([]);
-      setIsCartOpen(false);
-      setIsCheckingOut(false);
-      setActiveOrder(order);
-      setShowOrderSuccessModal(true);
-      playNotificationChime('order');
-    }, 500);
+      setTimeout(async () => {
+        try {
+          const order = await posService.createOrder({
+            orderType,
+            tableNumber: orderType === 'dine_in' ? tableNumber : undefined,
+            items: cart,
+            paymentMethod,
+            paymentStatus: paymentMethod === 'qris' ? 'PAID' : 'UNPAID',
+            createdByRole: 'customer',
+            createdByName: `Customer (Table ${tableNumber})`,
+            customerNote: orderType === 'dine_in' ? `Table ${tableNumber}` : 'Take Away',
+          });
+  
+          setCart([]);
+          setIsCartOpen(false);
+          setIsCheckingOut(false);
+          setActiveOrder(order);
+          setShowOrderSuccessModal(true);
+          playNotificationChime('order');
+        } catch (err) {
+          console.error('Failed to place order', err);
+          setIsCheckingOut(false);
+          alert('Failed to place the order. Please try again.');
+        }    }, 500);
   };
 
   const filteredMenuItems = menuItems.filter((item) => {

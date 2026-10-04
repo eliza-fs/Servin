@@ -18,6 +18,8 @@ import {
   POSSettings,
 } from '../types/pos';
 
+import { fetchOrders, updateOrderStatusInDb, subscribeToOrders } from './ordersApi';
+
 // Keys for localStorage
 const STORAGE_KEYS = {
   USERS: 'servin_pos_users',
@@ -778,6 +780,9 @@ class POSService {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
+  subscribeToOrders(listener: Listener): () => void {
+    return subscribeToOrders(listener);
+  }
 
   private notify() {
     this.listeners.forEach((listener) => {
@@ -821,10 +826,8 @@ class POSService {
     return data ? JSON.parse(data) : INITIAL_MENU_ITEMS;
   }
 
-  getOrders(): Order[] {
-    if (typeof window === 'undefined') return [];
-    const data = localStorage.getItem(STORAGE_KEYS.ORDERS);
-    return data ? JSON.parse(data) : [];
+  async getOrders(): Promise<Order[]> {
+    return fetchOrders();
   }
 
   getInventoryLogs(): InventoryLog[] {
@@ -841,34 +844,17 @@ class POSService {
    * Automatic stock deduction happens ONLY when status changes to COMPLETED.
    * If stock_deducted is already true, NEVER deduct twice!
    */
-  updateOrderStatus(orderId: string, newStatus: KitchenStatus, changedBy: string, note?: string): Order | undefined {
-    const orders = this.getOrders();
-    const orderIndex = orders.findIndex((o) => o.id === orderId);
-    if (orderIndex === -1) return undefined;
-
-    const order = orders[orderIndex];
-    const nowStr = new Date().toISOString();
-
-    // Check if status is transitioning to COMPLETED
-    if (newStatus === 'COMPLETED' && !order.stockDeducted) {
-      // Execute automatic ingredient stock deduction
-      this.deductIngredientsForOrder(order, changedBy);
-      order.stockDeducted = true;
-      order.completedAt = nowStr;
-    }
-
-    order.kitchenStatus = newStatus;
-    order.statusHistory.push({
-      status: newStatus,
-      timestamp: nowStr,
-      changedBy,
-      note: note || `Kitchen status updated to ${newStatus}`,
-    });
-
-    orders[orderIndex] = order;
-    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+  async updateOrderStatus(
+    orderId: string,
+    newStatus: KitchenStatus,
+    _changedBy: string,
+    _note?: string
+  ): Promise<Order | undefined> {
+    // TODO: ingredient stock deduction on COMPLETED is skipped for now
+    // (ingredient data still lives in localStorage and is not shared between apps).
+    const updated = await updateOrderStatusInDb(orderId, newStatus);
     this.notify();
-    return order;
+    return updated;
   }
 
   /**

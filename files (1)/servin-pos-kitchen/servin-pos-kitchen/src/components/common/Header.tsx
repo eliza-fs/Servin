@@ -1,28 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { posService } from '../../services/posService';
-import { Coffee, RefreshCw, ChefHat } from 'lucide-react';
+import { Coffee, ChefHat, LogOut } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import type { StaffProfile } from '../auth/AuthGate';
 
 /**
  * Header for the Kitchen KDS app.
- * The original header contained a 5-role workspace switcher; in the role-split
- * projects the role is fixed, so it is shown as a single active pill instead.
+ * Shows the logged-in staff member and the number of active orders.
  */
-const ROLE = 'kitchen' as const;
+interface HeaderProps {
+  profile: StaffProfile;
+  onLogout: () => void | Promise<void>;
+}
 
-export const Header: React.FC = () => {
+export const Header: React.FC<HeaderProps> = ({ profile, onLogout }) => {
   const [currentTime, setCurrentTime] = useState('');
-  const findUserName = () => posService.getUsers().find((u) => u.role === ROLE && u.isActive)?.name;
-  const [userName, setUserName] = useState(findUserName());
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
 
   useEffect(() => {
-    const refresh = () => {
-      setUserName(findUserName());
-      const active = posService.getOrders().filter((o) => o.kitchenStatus !== 'COMPLETED').length;
-      setActiveOrdersCount(active);
+    const refreshCount = async () => {
+      const { count } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .in('kitchen_status', ['WAITING', 'COOKING', 'READY']);
+      setActiveOrdersCount(count ?? 0);
     };
-    refresh();
-    const unsubscribe = posService.subscribe(refresh);
+    refreshCount();
+
+    const channel = supabase
+      .channel('kitchen-header-' + Date.now())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        refreshCount();
+      })
+      .subscribe();
 
     const timer = setInterval(() => {
       const now = new Date();
@@ -35,7 +44,7 @@ export const Header: React.FC = () => {
     }, 1000);
 
     return () => {
-      unsubscribe();
+      supabase.removeChannel(channel);
       clearInterval(timer);
     };
   }, []);
@@ -63,44 +72,43 @@ export const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Zone 2: Fixed role pill (replaces the 5-role switcher) */}
+        {/* Zone 2: Active workspace pill */}
         <div className="flex items-center p-1 bg-slate-100/90 rounded-xl border border-slate-200/80 max-w-full overflow-x-auto">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-white text-slate-900 shadow-xs border border-slate-200/60">
             <span className="text-amber-600">
               <ChefHat className="w-3.5 h-3.5" />
             </span>
             <span>Kitchen KDS</span>
-              {activeOrdersCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-white animate-pulse">
-                  {activeOrdersCount}
-                </span>
-              )}
+            {activeOrdersCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-white animate-pulse">
+                {activeOrdersCount}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Zone 3: Actions & System Status */}
+        {/* Zone 3: User & logout */}
         <div className="flex items-center gap-2.5 shrink-0">
-          <button
-            onClick={() => {
-              if (confirm('Reset demo data to initial state (sample order ORD-1024, inventory stocks & recipes)?')) {
-                posService.resetToDefaults();
-              }
-            }}
-            title="Reset sample orders & inventory"
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer border border-transparent hover:border-slate-200"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-          </button>
-
-          <div className="hidden xl:flex items-center gap-2 pl-2 border-l border-slate-200 text-xs text-slate-600">
+          <div className="hidden md:flex items-center gap-2 pl-2 text-xs text-slate-600">
             <span className="font-mono tabular-nums text-slate-700 font-medium">
               {currentTime || '12:00'}
             </span>
             <span className="text-slate-400">·</span>
-            <span className="text-slate-500 truncate max-w-[100px]">
-              {userName || 'Staff'}
+            <span className="text-slate-700 font-medium truncate max-w-[120px]">
+              {profile.name}
+            </span>
+            <span className="px-1.5 py-0.5 rounded-md bg-slate-100 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+              {profile.role}
             </span>
           </div>
+
+          <button
+            onClick={() => onLogout()}
+            title="Sign out"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer border border-transparent hover:border-slate-200"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     </header>

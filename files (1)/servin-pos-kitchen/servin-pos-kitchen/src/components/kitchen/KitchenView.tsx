@@ -18,46 +18,55 @@ import {
 } from 'lucide-react';
 
 export const KitchenView: React.FC = () => {
-  const [orders, setOrders] = useState<Order[]>(posService.getOrders());
+  const [orders, setOrders] = useState<Order[]>([]);  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const reloadData = () => {
-    setOrders(posService.getOrders());
+  const reloadData = async () => {
+    try {
+      setOrders(await posService.getOrders());
+    } catch (err) {
+      console.error('Failed to load orders', err);
+    }
   };
 
   useEffect(() => {
     reloadData();
-    const unsub = posService.subscribe(reloadData);
+    const unsub = posService.subscribeToOrders(reloadData);
     return () => unsub();
   }, []);
-
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  const handleUpdateStatus = (orderId: string, nextStatus: KitchenStatus) => {
-    const updated = posService.updateOrderStatus(orderId, nextStatus, 'Chef Joko');
-    if (!updated) return;
+  const handleUpdateStatus = async (orderId: string, nextStatus: KitchenStatus) => {
+    try {
+      const updated = await posService.updateOrderStatus(orderId, nextStatus, 'Chef Joko');
+      await reloadData();
 
-    if (soundEnabled) {
-      if (nextStatus === 'COOKING') playNotificationChime('click');
-      else if (nextStatus === 'READY') playNotificationChime('ready');
-      else if (nextStatus === 'COMPLETED') playNotificationChime('complete');
-    }
+      if (!updated) {
+        showToast('This order was already updated or cancelled.');
+        return;
+      }
 
-    if (nextStatus === 'COMPLETED') {
-      showToast(
-        `Order ${updated.queueNumber} Completed: Recipe BOM stock deducted automatically.`
-      );
-    } else if (nextStatus === 'READY') {
-      showToast(`Order ${updated.queueNumber} is marked READY for pickup.`);
-    } else if (nextStatus === 'COOKING') {
-      showToast(`Started preparation for Order ${updated.queueNumber}.`);
+      if (soundEnabled) {
+        if (nextStatus === 'COOKING') playNotificationChime('click');
+        else if (nextStatus === 'READY') playNotificationChime('ready');
+        else if (nextStatus === 'COMPLETED') playNotificationChime('complete');
+      }
+
+      if (nextStatus === 'COMPLETED') {
+        showToast(`Order ${updated.queueNumber} completed.`);
+      } else if (nextStatus === 'READY') {
+        showToast(`Order ${updated.queueNumber} is marked READY for pickup.`);
+      } else if (nextStatus === 'COOKING') {
+        showToast(`Started preparation for Order ${updated.queueNumber}.`);
+      }
+    } catch (err) {
+      console.error('Failed to update order status', err);
+      showToast('Failed to update the order. Please try again.');
     }
   };
-
   const getElapsedMinutes = (createdAt: string): number => {
     const created = new Date(createdAt).getTime();
     const now = Date.now();
