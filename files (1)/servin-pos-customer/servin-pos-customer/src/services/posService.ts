@@ -4,7 +4,7 @@
  * Role-scoped version of the original central posService.
  * - Identical in every role app: storage keys + seed data + core (init, subscribe, reset, users),
  *   so each app can boot on its own and all apps share the same data contract.
- * - Specific to this role: createOrder (+ order id / queue number generation) and read access to menu, categories and orders.
+ * - Specific to this role: createOrder (Supabase) and read access to menu, categories and orders.
  */
 
 import {
@@ -13,22 +13,199 @@ import {
   Ingredient,
   MenuItem,
   Order,
+  OrderDetail,
+  OrderItemCustomization,
   InventoryLog,
   Payment,
+  PaymentMethod,
+  PaymentStatus,
+  KitchenStatus,
   UserRole,
   POSSettings,
 } from '../types/pos';
+import { supabase } from '../lib/supabase';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
-// Keys for localStorage
+// Keys for localStorage (menu, catalog, and settings stay local)
 const STORAGE_KEYS = {
   USERS: 'servin_pos_users',
   CATEGORIES: 'servin_pos_categories',
   INGREDIENTS: 'servin_pos_ingredients',
   MENU_ITEMS: 'servin_pos_menu_items',
-  ORDERS: 'servin_pos_orders',
   INVENTORY_LOGS: 'servin_pos_inventory_logs',
   SETTINGS: 'servin_pos_settings',
 };
+
+type DbOrderRow = {
+  id: number;
+  queue_number: string | null;
+  table_number: string | null;
+  customer_name: string | null;
+  payment_method: string | null;
+  payment_status: string | null;
+  kitchen_status: string | null;
+  total: number | string | null;
+  stock_deducted: boolean | null;
+  cancel_reason: string | null;
+  cancelled_by: string | null;
+  cancelled_at: string | null;
+  created_at: string | null;
+};
+
+type DbOrderItemRow = {
+  id: number;
+  order_id: number;
+  menu_item_id: string | null;
+  name: string | null;
+  price: number | string | null;
+  quantity: number | null;
+  customizations: unknown;
+  notes: string | null;
+};
+
+type DbOrderWithItems = DbOrderRow & {
+  order_items?: DbOrderItemRow[] | null;
+};
+
+const KITCHEN_STATUSES: KitchenStatus[] = [
+  'WAITING',
+  'COOKING',
+  'READY',
+  'COMPLETED',
+  'CANCELLED',
+];
+
+function toNumber(value: number | string | null | undefined, fallback = 0): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+}
+
+function mapKitchenStatus(value: string | null): KitchenStatus {
+  if (value && (KITCHEN_STATUSES as string[]).includes(value)) {
+    return value as KitchenStatus;
+  }
+  return 'WAITING';
+}
+
+function mapPaymentMethod(value: string | null): PaymentMethod {
+  return value === 'cash' ? 'cash' : 'qris';
+}
+
+function mapPaymentStatus(value: string | null): PaymentStatus {
+  if (value === 'PAID' || value === 'FAILED' || value === 'UNPAID') return value;
+  return 'UNPAID';
+}
+
+function mapOrderItem(row: DbOrderItemRow): OrderDetail {
+  const extras =
+    row.customizations && typeof row.customizations === 'object' && !Array.isArray(row.customizations)
+      ? (row.customizations as Record<string, unknown>)
+      : {};
+
+  const quantity = row.quantity ?? 1;
+  const unitPrice =
+    typeof extras.unitPrice === 'number' ? extras.unitPrice : toNumber(row.price);
+  const customizationTotal =
+    typeof extras.customizationTotal === 'number' ? extras.customizationTotal : 0;
+  const subtotal =
+    typeof extras.subtotal === 'number' ? extras.subtotal : toNumber(row.price) * quantity;
+
+  const toppings = Array.isArray(extras.toppings)
+    ? (extras.toppings as { name: string; price: number }[])
+    : undefined;
+
+  const customizations: OrderItemCustomization = {
+    size: typeof extras.size === 'string' ? extras.size : undefined,
+    sizePriceDelta: typeof extras.sizePriceDelta === 'number' ? extras.sizePriceDelta : undefined,
+    sugarLevel: typeof extras.sugarLevel === 'string' ? extras.sugarLevel : undefined,
+    iceLevel: typeof extras.iceLevel === 'string' ? extras.iceLevel : undefined,
+    spicyLevel: typeof extras.spicyLevel === 'string' ? extras.spicyLevel : undefined,
+    toppings,
+  };
+
+  const hasCustomizations = Boolean(
+    customizations.size ||
+      customizations.sugarLevel ||
+      customizations.iceLevel ||
+      customizations.spicyLevel ||
+      (customizations.toppings && customizations.toppings.length > 0)
+  );
+
+  return {
+    id: String(row.id),
+    menuItemId: row.menu_item_id ?? '',
+    name: row.name ?? '',
+    quantity,
+    unitPrice,
+    customizationTotal,
+    subtotal,
+    customizations: hasCustomizations ? customizations : undefined,
+    notes: row.notes ?? undefined,
+  };
+}
+
+function mapDbOrder(row: DbOrderWithItems): Order {
+  const items = (row.order_items ?? []).map(mapOrderItem);
+  const totalAmount = toNumber(row.total);
+  const createdAt = row.created_at ?? new Date().toISOString();
+  const kitchenStatus = mapKitchenStatus(row.kitchen_status);
+  const paymentStatus = mapPaymentStatus(row.payment_status);
+  const paymentMethod = mapPaymentMethod(row.payment_method);
+
+  const payment: Payment = {
+    method: paymentMethod,
+    status: paymentStatus,
+    paidAt: paymentStatus === 'PAID' ? createdAt : undefined,
+  };
+
+  return {
+    id: String(row.id),
+    queueNumber: row.queue_number ?? '',
+    orderType: row.table_number ? 'dine_in' : 'take_away',
+    tableNumber: row.table_number ?? undefined,
+    items,
+    subtotal: items.reduce((sum, item) => sum + item.subtotal, 0) || totalAmount,
+    tax: 0,
+    totalAmount,
+    payment,
+    kitchenStatus,
+    statusHistory: [
+      {
+        status: kitchenStatus,
+        timestamp: createdAt,
+        changedBy: row.customer_name || 'Customer',
+      },
+    ],
+    createdAt,
+    completedAt: kitchenStatus === 'COMPLETED' ? createdAt : undefined,
+    stockDeducted: Boolean(row.stock_deducted),
+    createdByRole: 'customer',
+    createdByName: row.customer_name ?? undefined,
+  };
+}
+
+async function fetchOrdersFromDb(orderId?: string): Promise<Order[]> {
+  let query = supabase
+    .from('orders')
+    .select('*, order_items(*)')
+    .order('created_at', { ascending: false });
+
+  if (orderId !== undefined) {
+    const numericId = Number(orderId);
+    if (!Number.isFinite(numericId)) return [];
+    query = query.eq('id', numericId);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    throw new Error(error.message);
+  }
+  return ((data ?? []) as DbOrderWithItems[]).map(mapDbOrder);
+}
 
 // Initial Sample Ingredients
 const INITIAL_INGREDIENTS: Ingredient[] = [
@@ -401,278 +578,6 @@ const INITIAL_SETTINGS: POSSettings = {
   defaultTableNumber: '12',
 };
 
-// Seed sample orders:
-// 1 active order ORD-1024 as requested in prompt:
-// Order ID: ORD-1024
-// Queue: A-024
-// Type: Dine-in, Table: 12
-// Items: Iced Latte x1 (Medium, Less Sugar, Less Ice), Chicken Rice Bowl x1 (No Spicy, "No peanuts")
-// Payment: QRIS, PAID
-// Kitchen Status: COOKING
-// stockDeducted: false
-const createInitialOrders = (): Order[] => {
-  const now = new Date();
-  
-  const sampleActiveOrder: Order = {
-    id: 'ORD-1024',
-    queueNumber: 'A-024',
-    orderType: 'dine_in',
-    tableNumber: '12',
-    items: [
-      {
-        id: 'item-1024-1',
-        menuItemId: 'menu-latte',
-        name: 'Iced Latte',
-        quantity: 1,
-        unitPrice: 25000,
-        customizationTotal: 0,
-        subtotal: 25000,
-        customizations: {
-          size: 'Regular (12oz)',
-          sugarLevel: 'Less Sugar (70%)',
-          iceLevel: 'Less Ice',
-        },
-        notes: 'Less sweet please',
-      },
-      {
-        id: 'item-1024-2',
-        menuItemId: 'menu-chicken-rice-bowl',
-        name: 'Chicken Rice Bowl',
-        quantity: 1,
-        unitPrice: 32000,
-        customizationTotal: 0,
-        subtotal: 32000,
-        customizations: {
-          spicyLevel: 'Non-Spicy',
-        },
-        notes: 'No peanuts',
-      },
-    ],
-    subtotal: 57000,
-    tax: 0,
-    totalAmount: 57000,
-    payment: {
-      method: 'qris',
-      status: 'PAID',
-      paidAt: new Date(now.getTime() - 12 * 60000).toISOString(),
-      transactionRef: 'QRIS-778923412',
-    },
-    kitchenStatus: 'COOKING',
-    statusHistory: [
-      {
-        status: 'WAITING',
-        timestamp: new Date(now.getTime() - 12 * 60000).toISOString(),
-        changedBy: 'Customer (Table 12)',
-        note: 'Order placed & QRIS paid',
-      },
-      {
-        status: 'COOKING',
-        timestamp: new Date(now.getTime() - 8 * 60000).toISOString(),
-        changedBy: 'Chef Joko',
-        note: 'Kitchen started cooking',
-      },
-    ],
-    createdAt: new Date(now.getTime() - 12 * 60000).toISOString(),
-    stockDeducted: false, // NOT completed yet, stock NOT deducted!
-    createdByRole: 'customer',
-    createdByName: 'Customer (Table 12)',
-    estimatedCompletionMinutes: 10,
-    customerNote: 'Dine-in at Table 12. Please serve beverage first.',
-  };
-
-  // Additional realistic completed orders earlier today for owner metrics
-  const earlierCompletedOrders: Order[] = [
-    {
-      id: 'ORD-1020',
-      queueNumber: 'A-020',
-      orderType: 'dine_in',
-      tableNumber: '4',
-      items: [
-        {
-          id: 'item-1020-1',
-          menuItemId: 'menu-americano',
-          name: 'Iced Americano',
-          quantity: 2,
-          unitPrice: 18000,
-          customizationTotal: 0,
-          subtotal: 36000,
-          customizations: { size: 'Regular (12oz)', iceLevel: 'Normal Ice' },
-        },
-        {
-          id: 'item-1020-2',
-          menuItemId: 'menu-croissant',
-          name: 'Butter Croissant',
-          quantity: 2,
-          unitPrice: 22000,
-          customizationTotal: 0,
-          subtotal: 44000,
-        },
-      ],
-      subtotal: 80000,
-      tax: 0,
-      totalAmount: 80000,
-      payment: {
-        method: 'cash',
-        status: 'PAID',
-        amountReceived: 100000,
-        change: 20000,
-        paidAt: new Date(now.getTime() - 180 * 60000).toISOString(),
-        transactionRef: 'CASH-1020',
-      },
-      kitchenStatus: 'COMPLETED',
-      statusHistory: [
-        { status: 'WAITING', timestamp: new Date(now.getTime() - 180 * 60000).toISOString(), changedBy: 'Cashier' },
-        { status: 'COOKING', timestamp: new Date(now.getTime() - 175 * 60000).toISOString(), changedBy: 'Kitchen' },
-        { status: 'READY', timestamp: new Date(now.getTime() - 165 * 60000).toISOString(), changedBy: 'Kitchen' },
-        { status: 'COMPLETED', timestamp: new Date(now.getTime() - 160 * 60000).toISOString(), changedBy: 'Kitchen' },
-      ],
-      createdAt: new Date(now.getTime() - 180 * 60000).toISOString(),
-      completedAt: new Date(now.getTime() - 160 * 60000).toISOString(),
-      stockDeducted: true,
-      createdByRole: 'cashier',
-      createdByName: 'Budi Santoso',
-    },
-    {
-      id: 'ORD-1021',
-      queueNumber: 'A-021',
-      orderType: 'take_away',
-      items: [
-        {
-          id: 'item-1021-1',
-          menuItemId: 'menu-caramel-macchiato',
-          name: 'Caramel Macchiato',
-          quantity: 1,
-          unitPrice: 28000,
-          customizationTotal: 5000,
-          subtotal: 33000,
-          customizations: { size: 'Large (16oz)', sugarLevel: 'Normal Sugar (100%)' },
-        },
-        {
-          id: 'item-1021-2',
-          menuItemId: 'menu-french-fries',
-          name: 'French Fries',
-          quantity: 1,
-          unitPrice: 20000,
-          customizationTotal: 0,
-          subtotal: 20000,
-        },
-      ],
-      subtotal: 53000,
-      tax: 0,
-      totalAmount: 53000,
-      payment: {
-        method: 'qris',
-        status: 'PAID',
-        paidAt: new Date(now.getTime() - 120 * 60000).toISOString(),
-        transactionRef: 'QRIS-552431',
-      },
-      kitchenStatus: 'COMPLETED',
-      statusHistory: [
-        { status: 'WAITING', timestamp: new Date(now.getTime() - 120 * 60000).toISOString(), changedBy: 'Customer' },
-        { status: 'COOKING', timestamp: new Date(now.getTime() - 115 * 60000).toISOString(), changedBy: 'Kitchen' },
-        { status: 'READY', timestamp: new Date(now.getTime() - 105 * 60000).toISOString(), changedBy: 'Kitchen' },
-        { status: 'COMPLETED', timestamp: new Date(now.getTime() - 100 * 60000).toISOString(), changedBy: 'Kitchen' },
-      ],
-      createdAt: new Date(now.getTime() - 120 * 60000).toISOString(),
-      completedAt: new Date(now.getTime() - 100 * 60000).toISOString(),
-      stockDeducted: true,
-      createdByRole: 'customer',
-      createdByName: 'Customer Takeaway',
-    },
-    {
-      id: 'ORD-1022',
-      queueNumber: 'A-022',
-      orderType: 'dine_in',
-      tableNumber: '8',
-      items: [
-        {
-          id: 'item-1022-1',
-          menuItemId: 'menu-matcha',
-          name: 'Matcha Latte',
-          quantity: 2,
-          unitPrice: 27000,
-          customizationTotal: 0,
-          subtotal: 54000,
-          customizations: { sugarLevel: 'Less Sugar (70%)' },
-        },
-        {
-          id: 'item-1022-2',
-          menuItemId: 'menu-chicken-rice-bowl',
-          name: 'Chicken Rice Bowl',
-          quantity: 2,
-          unitPrice: 32000,
-          customizationTotal: 5000,
-          subtotal: 69000,
-          customizations: { spicyLevel: 'Mild Spicy', toppings: [{ name: 'Sunny Side Up Egg', price: 5000 }] },
-        },
-      ],
-      subtotal: 123000,
-      tax: 0,
-      totalAmount: 123000,
-      payment: {
-        method: 'qris',
-        status: 'PAID',
-        paidAt: new Date(now.getTime() - 75 * 60000).toISOString(),
-        transactionRef: 'QRIS-882941',
-      },
-      kitchenStatus: 'COMPLETED',
-      statusHistory: [
-        { status: 'WAITING', timestamp: new Date(now.getTime() - 75 * 60000).toISOString(), changedBy: 'Customer' },
-        { status: 'COOKING', timestamp: new Date(now.getTime() - 70 * 60000).toISOString(), changedBy: 'Kitchen' },
-        { status: 'READY', timestamp: new Date(now.getTime() - 55 * 60000).toISOString(), changedBy: 'Kitchen' },
-        { status: 'COMPLETED', timestamp: new Date(now.getTime() - 50 * 60000).toISOString(), changedBy: 'Kitchen' },
-      ],
-      createdAt: new Date(now.getTime() - 75 * 60000).toISOString(),
-      completedAt: new Date(now.getTime() - 50 * 60000).toISOString(),
-      stockDeducted: true,
-      createdByRole: 'customer',
-      createdByName: 'Customer (Table 8)',
-    },
-    {
-      id: 'ORD-1023',
-      queueNumber: 'A-023',
-      orderType: 'take_away',
-      items: [
-        {
-          id: 'item-1023-1',
-          menuItemId: 'menu-latte',
-          name: 'Iced Latte',
-          quantity: 1,
-          unitPrice: 25000,
-          customizationTotal: 0,
-          subtotal: 25000,
-          customizations: { size: 'Regular (12oz)', iceLevel: 'Normal Ice' },
-        },
-      ],
-      subtotal: 25000,
-      tax: 0,
-      totalAmount: 25000,
-      payment: {
-        method: 'cash',
-        status: 'PAID',
-        amountReceived: 50000,
-        change: 25000,
-        paidAt: new Date(now.getTime() - 40 * 60000).toISOString(),
-        transactionRef: 'CASH-1023',
-      },
-      kitchenStatus: 'COMPLETED',
-      statusHistory: [
-        { status: 'WAITING', timestamp: new Date(now.getTime() - 40 * 60000).toISOString(), changedBy: 'Cashier' },
-        { status: 'COOKING', timestamp: new Date(now.getTime() - 36 * 60000).toISOString(), changedBy: 'Kitchen' },
-        { status: 'READY', timestamp: new Date(now.getTime() - 30 * 60000).toISOString(), changedBy: 'Kitchen' },
-        { status: 'COMPLETED', timestamp: new Date(now.getTime() - 25 * 60000).toISOString(), changedBy: 'Kitchen' },
-      ],
-      createdAt: new Date(now.getTime() - 40 * 60000).toISOString(),
-      completedAt: new Date(now.getTime() - 25 * 60000).toISOString(),
-      stockDeducted: true,
-      createdByRole: 'cashier',
-      createdByName: 'Budi Santoso',
-    },
-  ];
-
-  return [...earlierCompletedOrders, sampleActiveOrder];
-};
-
 // Seed sample initial inventory logs
 const createInitialLogs = (): InventoryLog[] => {
   const now = new Date();
@@ -763,9 +668,6 @@ class POSService {
     if (!localStorage.getItem(STORAGE_KEYS.MENU_ITEMS)) {
       localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(INITIAL_MENU_ITEMS));
     }
-    if (!localStorage.getItem(STORAGE_KEYS.ORDERS)) {
-      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(createInitialOrders()));
-    }
     if (!localStorage.getItem(STORAGE_KEYS.INVENTORY_LOGS)) {
       localStorage.setItem(STORAGE_KEYS.INVENTORY_LOGS, JSON.stringify(createInitialLogs()));
     }
@@ -797,7 +699,6 @@ class POSService {
     localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(INITIAL_CATEGORIES));
     localStorage.setItem(STORAGE_KEYS.INGREDIENTS, JSON.stringify(INITIAL_INGREDIENTS));
     localStorage.setItem(STORAGE_KEYS.MENU_ITEMS, JSON.stringify(INITIAL_MENU_ITEMS));
-    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(createInitialOrders()));
     localStorage.setItem(STORAGE_KEYS.INVENTORY_LOGS, JSON.stringify(createInitialLogs()));
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(INITIAL_SETTINGS));
     this.notify();
@@ -822,10 +723,8 @@ class POSService {
     return data ? JSON.parse(data) : INITIAL_MENU_ITEMS;
   }
 
-  getOrders(): Order[] {
-    if (typeof window === 'undefined') return [];
-    const data = localStorage.getItem(STORAGE_KEYS.ORDERS);
-    return data ? JSON.parse(data) : [];
+  async getOrders(): Promise<Order[]> {
+    return fetchOrdersFromDb();
   }
 
   getSettings(): POSSettings {
@@ -834,41 +733,38 @@ class POSService {
     return data ? JSON.parse(data) : INITIAL_SETTINGS;
   }
 
-  // Finders
-  getOrderById(orderId: string): Order | undefined {
-    return this.getOrders().find((o) => o.id === orderId);
+  async getOrderById(orderId: string): Promise<Order | undefined> {
+    const orders = await fetchOrdersFromDb(orderId);
+    return orders[0];
   }
 
-  // Order Number & Queue Generation
-  getNextOrderIdentifiers(): { id: string; queueNumber: string } {
-    const orders = this.getOrders();
-    let maxOrdNumber = 1024;
-    let maxQueueNumber = 24;
+  /**
+   * Live order tracking: Supabase Realtime on orders, plus 5s polling fallback.
+   */
+  subscribeToOrders(listener: Listener): () => void {
+    const pollId = window.setInterval(() => {
+      listener();
+    }, 5000);
 
-    orders.forEach((o) => {
-      const ordMatch = o.id.match(/ORD-(\d+)/);
-      if (ordMatch) {
-        const num = parseInt(ordMatch[1], 10);
-        if (num > maxOrdNumber) maxOrdNumber = num;
-      }
-      const qMatch = o.queueNumber.match(/A-(\d+)/);
-      if (qMatch) {
-        const num = parseInt(qMatch[1], 10);
-        if (num > maxQueueNumber) maxQueueNumber = num;
-      }
-    });
+    const channel: RealtimeChannel = supabase
+    .channel(`customer-orders-${Date.now()}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        () => {
+          listener();
+        }
+      )
+      .subscribe();
 
-    const nextOrd = maxOrdNumber + 1;
-    const nextQ = maxQueueNumber + 1;
-    const queueStr = `A-${String(nextQ).padStart(3, '0')}`;
-    return {
-      id: `ORD-${nextOrd}`,
-      queueNumber: queueStr,
+    return () => {
+      window.clearInterval(pollId);
+      void supabase.removeChannel(channel);
     };
   }
 
   // Create New Order (Dine-in or Take Away)
-  createOrder(params: {
+  async createOrder(params: {
     orderType: 'dine_in' | 'take_away';
     tableNumber?: string;
     items: Order['items'];
@@ -881,60 +777,61 @@ class POSService {
     customerNote?: string;
     customOrderId?: string;
     customQueueNumber?: string;
-  }): Order {
-    const { id, queueNumber } = this.getNextOrderIdentifiers();
-    const orderId = params.customOrderId || id;
-    const qNumber = params.customQueueNumber || queueNumber;
-
+  }): Promise<Order> {
     const subtotal = params.items.reduce((sum, item) => sum + item.subtotal, 0);
     const settings = this.getSettings();
     const tax = settings.enableTax ? Math.round(subtotal * (settings.taxRatePercent / 100)) : 0;
     const totalAmount = subtotal + tax;
-
     const paymentStatus = params.paymentStatus || (params.paymentMethod === 'qris' ? 'PAID' : 'UNPAID');
-    const nowStr = new Date().toISOString();
 
-    const payment: Payment = {
-      method: params.paymentMethod,
-      status: paymentStatus,
-      amountReceived: params.amountReceived,
-      change: params.change,
-      paidAt: paymentStatus === 'PAID' ? nowStr : undefined,
-      transactionRef: `${params.paymentMethod.toUpperCase()}-${orderId.replace('ORD-', '')}`,
-    };
+    const { data: insertedOrder, error: orderError } = await supabase
+      .from('orders')
+      .insert({
+        table_number: params.orderType === 'dine_in' ? (params.tableNumber ?? null) : null,
+        customer_name: params.createdByName ?? null,
+        payment_method: params.paymentMethod,
+        payment_status: paymentStatus,
+        kitchen_status: 'WAITING',
+        total: totalAmount,
+        stock_deducted: false,
+      })
+      .select('*')
+      .single();
 
-    const newOrder: Order = {
-      id: orderId,
-      queueNumber: qNumber,
-      orderType: params.orderType,
-      tableNumber: params.tableNumber,
-      items: params.items,
-      subtotal,
-      tax,
-      totalAmount,
-      payment,
-      kitchenStatus: 'WAITING',
-      statusHistory: [
-        {
-          status: 'WAITING',
-          timestamp: nowStr,
-          changedBy: params.createdByName || `${params.createdByRole}`,
-          note: 'Order created and sent to kitchen',
-        },
-      ],
-      createdAt: nowStr,
-      stockDeducted: false, // CRITICAL: Only deducted on COMPLETED!
-      createdByRole: params.createdByRole,
-      createdByName: params.createdByName,
-      estimatedCompletionMinutes: 12,
-      customerNote: params.customerNote,
-    };
+    if (orderError || !insertedOrder) {
+      throw new Error(orderError?.message || 'Failed to create order');
+    }
 
-    const orders = this.getOrders();
-    orders.push(newOrder);
-    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+    const orderRow = insertedOrder as DbOrderRow;
+    const itemPayload = params.items.map((item) => ({
+      order_id: orderRow.id,
+      menu_item_id: item.menuItemId,
+      name: item.name,
+      price: item.unitPrice + item.customizationTotal,
+      quantity: item.quantity,
+      customizations: {
+        ...(item.customizations ?? {}),
+        unitPrice: item.unitPrice,
+        customizationTotal: item.customizationTotal,
+        subtotal: item.subtotal,
+      },
+      notes: item.notes ?? null,
+    }));
+
+    const { error: itemsError } = await supabase.from('order_items').insert(itemPayload);
+
+    if (itemsError) {
+      await supabase.from('orders').delete().eq('id', orderRow.id);
+      throw new Error(itemsError.message);
+    }
+
+    const saved = await this.getOrderById(String(orderRow.id));
+    if (!saved) {
+      throw new Error('Order was created but could not be loaded');
+    }
+
     this.notify();
-    return newOrder;
+    return saved;
   }
 }
 

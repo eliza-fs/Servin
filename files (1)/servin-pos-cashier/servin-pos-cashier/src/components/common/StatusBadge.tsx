@@ -51,6 +51,15 @@ export const KitchenStatusBadge: React.FC<KitchenStatusBadgeProps> = ({ status, 
           <span>Completed</span>
         </span>
       );
+    case 'CANCELLED':
+      return (
+        <span
+          className={`inline-flex items-center rounded-md bg-rose-50 text-rose-700 border border-rose-200/80 ${sizeClasses[size]}`}
+        >
+          <XCircle className="w-3.5 h-3.5 text-rose-500" />
+          <span>Cancelled</span>
+        </span>
+      );
   }
 };
 
