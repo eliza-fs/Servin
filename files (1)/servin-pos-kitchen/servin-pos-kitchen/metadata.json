@@ -1,0 +1,8 @@
+{
+  "name": "Servin Coffee & Kitchen POS - Kitchen KDS",
+  "description": "Kitchen Display System (KDS) for Servin Coffee & Kitchen: WAITING / COOKING / READY ticket board with automatic ingredient (BOM) stock deduction on completion.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

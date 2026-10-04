@@ -1,0 +1,8 @@
+{
+  "name": "Servin Coffee & Kitchen POS - Cashier",
+  "description": "Cashier POS register for Servin Coffee & Kitchen: rapid touch ordering, billing, cash/QRIS payment and live order monitoring.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

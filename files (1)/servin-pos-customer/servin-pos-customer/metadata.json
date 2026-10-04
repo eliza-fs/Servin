@@ -1,0 +1,8 @@
+{
+  "name": "Servin Coffee & Kitchen POS - Customer",
+  "description": "Customer self-order interface for Servin Coffee & Kitchen: browse the menu, customize items, place dine-in / take-away orders (cash or QRIS) and track order status.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Servin Coffee & Kitchen POS - Owner",
+  "description": "Owner & stakeholder dashboard for Servin Coffee & Kitchen: revenue, gross margin, best sellers, BOM economics, stock levels and CSV export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
