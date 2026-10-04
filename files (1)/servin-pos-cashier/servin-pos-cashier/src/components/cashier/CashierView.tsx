@@ -26,7 +26,7 @@ export const CashierView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'new_order' | 'active_orders' | 'transactions' | 'order_status'>('new_order');
   const [categories, setCategories] = useState(posService.getCategories());
   const [menuItems, setMenuItems] = useState(posService.getMenuItems());
-  const [orders, setOrders] = useState(posService.getOrders());
+  const [orders, setOrders] = useState<Order[]>([]);
 
   // New Order State
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -55,19 +55,29 @@ export const CashierView: React.FC = () => {
   // Pay at Cashier collection for unpaid orders
   const [collectingOrder, setCollectingOrder] = useState<Order | null>(null);
   const [collectCashReceived, setCollectCashReceived] = useState<number>(0);
+    // Cancel order & submit guards
+    const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null);
+    const [cancelReason, setCancelReason] = useState('');
+    const [cancelError, setCancelError] = useState('');
+    const [isCancelling, setIsCancelling] = useState(false);
+    const [isPaying, setIsPaying] = useState(false);
 
-  const reloadData = () => {
-    setCategories(posService.getCategories());
-    setMenuItems(posService.getMenuItems());
-    setOrders(posService.getOrders());
-  };
 
-  useEffect(() => {
-    reloadData();
-    const unsub = posService.subscribe(reloadData);
-    return () => unsub();
-  }, []);
-
+    const reloadData = async () => {
+      setCategories(posService.getCategories());
+      setMenuItems(posService.getMenuItems());
+      try {
+        setOrders(await posService.getOrders());
+      } catch (err) {
+        console.error('Failed to load orders', err);
+      }
+    };
+  
+    useEffect(() => {
+      reloadData();
+      const unsub = posService.subscribeToOrders(reloadData);
+      return () => unsub();
+    }, []);
   const filteredMenuItems = menuItems.filter((m) => {
     if (!m.isActive) return false;
     if (selectedCategory !== 'all' && m.categoryId !== selectedCategory) return false;
@@ -154,44 +164,80 @@ export const CashierView: React.FC = () => {
     setShowPaymentModal(true);
   };
 
-  const handleFinalizePayment = () => {
-    const change = Math.max(0, cashReceived - cartSubtotal);
+  const handleFinalizePayment = async () => {
+    if (isPaying) return;
+    setIsPaying(true);
+    try {
+      const change = Math.max(0, cashReceived - cartSubtotal);
 
-    const createdOrder = posService.createOrder({
-      orderType,
-      tableNumber: orderType === 'dine_in' ? tableNumber : undefined,
-      items: cashierCart,
-      paymentMethod,
-      paymentStatus: 'PAID',
-      amountReceived: paymentMethod === 'cash' ? cashReceived : cartSubtotal,
-      change: paymentMethod === 'cash' ? change : 0,
-      createdByRole: 'cashier',
-      createdByName: 'Cashier Budi',
-      customerNote: customerName ? `Guest: ${customerName}` : undefined,
-    });
+      const createdOrder = await posService.createOrder({
+        orderType,
+        tableNumber: orderType === 'dine_in' ? tableNumber : undefined,
+        items: cashierCart,
+        paymentMethod,
+        paymentStatus: 'PAID',
+        amountReceived: paymentMethod === 'cash' ? cashReceived : cartSubtotal,
+        change: paymentMethod === 'cash' ? change : 0,
+        createdByRole: 'cashier',
+        createdByName: 'Cashier Budi',
+        customerNote: customerName ? `Guest: ${customerName}` : undefined,
+      });
 
-    setCashierCart([]);
-    setShowPaymentModal(false);
-    setJustCompletedOrder(createdOrder);
-    setShowReceiptModal(true);
-    playNotificationChime('order');
+      setCashierCart([]);
+      setShowPaymentModal(false);
+      setJustCompletedOrder(createdOrder);
+      setShowReceiptModal(true);
+      playNotificationChime('order');
+      await reloadData();
+    } catch (err) {
+      console.error('Failed to create order', err);
+      alert('Failed to save the order. Please try again.');
+    } finally {
+      setIsPaying(false);
+    }
   };
-
-  const handleCollectCashPayment = () => {
+  const handleCollectCashPayment = async () => {
     if (!collectingOrder) return;
-    const change = Math.max(0, collectCashReceived - collectingOrder.totalAmount);
-    posService.processPayment(collectingOrder.id, {
-      status: 'PAID',
-      method: 'cash',
-      amountReceived: collectCashReceived,
-      change,
-    });
-    setCollectingOrder(null);
-    playNotificationChime('order');
+    try {
+      const change = Math.max(0, collectCashReceived - collectingOrder.totalAmount);
+      const updated = await posService.processPayment(collectingOrder.id, {
+        status: 'PAID',
+        method: 'cash',
+        amountReceived: collectCashReceived,
+        change,
+      });
+      if (!updated) {
+        alert('This order was cancelled or could not be updated.');
+      } else {
+        playNotificationChime('order');
+      }
+      setCollectingOrder(null);
+      await reloadData();
+    } catch (err) {
+      console.error('Failed to record payment', err);
+      alert('Failed to record the payment. Please try again.');
+    }
   };
 
-  const activeOrdersList = orders.filter((o) => o.kitchenStatus !== 'COMPLETED');
+  const handleConfirmCancel = async () => {
+    if (!cancellingOrder || isCancelling) return;
+    setIsCancelling(true);
+    setCancelError('');
+    try {
+      await posService.cancelOrder(cancellingOrder.id, cancelReason);
+      setCancellingOrder(null);
+      setCancelReason('');
+      await reloadData();
+    } catch (err) {
+      setCancelError(err instanceof Error ? err.message : 'Failed to cancel the order.');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
+  const activeOrdersList = orders.filter(
+    (o) => o.kitchenStatus !== 'COMPLETED' && o.kitchenStatus !== 'CANCELLED'
+  );
   return (
     <div className="max-w-[1520px] mx-auto px-4 sm:px-6 py-5 space-y-5">
       {/* Cashier Sub-navigation */}
@@ -543,29 +589,42 @@ export const CashierView: React.FC = () => {
                       </span>
                     </div>
 
-                    {order.payment.status === 'UNPAID' ? (
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => {
-                          setCollectingOrder(order);
-                          setCollectCashReceived(order.totalAmount);
+                          setCancellingOrder(order);
+                          setCancelReason('');
+                          setCancelError('');
                         }}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 cursor-pointer flex items-center gap-1 shadow-xs"
+                        className="px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-xs font-semibold hover:bg-rose-100 cursor-pointer"
                       >
-                        <Banknote className="w-3.5 h-3.5" />
-                        <span>Collect Cash</span>
+                        Cancel
                       </button>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setJustCompletedOrder(order);
-                          setShowReceiptModal(true);
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium hover:bg-slate-200 flex items-center gap-1 cursor-pointer"
-                      >
-                        <Printer className="w-3 h-3" />
-                        <span>Receipt</span>
-                      </button>
-                    )}
+
+                      {order.payment.status === 'UNPAID' ? (
+                        <button
+                          onClick={() => {
+                            setCollectingOrder(order);
+                            setCollectCashReceived(order.totalAmount);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 cursor-pointer flex items-center gap-1 shadow-xs"
+                        >
+                          <Banknote className="w-3.5 h-3.5" />
+                          <span>Collect Cash</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setJustCompletedOrder(order);
+                            setShowReceiptModal(true);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium hover:bg-slate-200 flex items-center gap-1 cursor-pointer"
+                        >
+                          <Printer className="w-3 h-3" />
+                          <span>Receipt</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))
@@ -976,6 +1035,51 @@ export const CashierView: React.FC = () => {
                 className="px-4 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 cursor-pointer disabled:opacity-50"
               >
                 Mark as Paid
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Order Modal */}
+      {cancellingOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200">
+            <h3 className="font-heading font-bold text-base text-slate-900 mb-1">Cancel this order?</h3>
+            <p className="text-xs text-slate-500 mb-3">
+              {cancellingOrder.queueNumber} ({cancellingOrder.id}) ·{' '}
+              {cancellingOrder.orderType === 'dine_in' ? `Table ${cancellingOrder.tableNumber}` : 'Take Away'} ·{' '}
+              {formatRupiah(cancellingOrder.totalAmount)}
+            </p>
+
+            <label className="text-xs font-bold text-slate-700 block mb-1">Reason (optional)</label>
+            <input
+              type="text"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="e.g. customer changed their mind"
+              className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-slate-900"
+            />
+
+            {cancelError && (
+              <p className="mt-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+                {cancelError}
+              </p>
+            )}
+
+            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end gap-2">
+              <button
+                onClick={() => setCancellingOrder(null)}
+                className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold cursor-pointer"
+              >
+                Keep Order
+              </button>
+              <button
+                disabled={isCancelling}
+                onClick={handleConfirmCancel}
+                className="px-4 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 cursor-pointer disabled:opacity-50"
+              >
+                {isCancelling ? 'Cancelling...' : 'Cancel Order'}
               </button>
             </div>
           </div>

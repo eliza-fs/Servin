@@ -8,6 +8,15 @@
  */
 
 import {
+  fetchAllOrders,
+  createOrderInDb,
+  updatePaymentInDb,
+  cancelOrderInDb,
+  subscribeToOrders,
+  type CreateOrderParams,
+} from './ordersApi';
+
+import {
   User,
   Category,
   Ingredient,
@@ -779,6 +788,14 @@ class POSService {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
+  async cancelOrder(orderId: string, reason?: string): Promise<void> {
+    await cancelOrderInDb(orderId, reason);
+    this.notify();
+  }
+
+  subscribeToOrders(listener: Listener): () => void {
+    return subscribeToOrders(listener);
+  }
 
   private notify() {
     this.listeners.forEach((listener) => {
@@ -822,10 +839,8 @@ class POSService {
     return data ? JSON.parse(data) : INITIAL_MENU_ITEMS;
   }
 
-  getOrders(): Order[] {
-    if (typeof window === 'undefined') return [];
-    const data = localStorage.getItem(STORAGE_KEYS.ORDERS);
-    return data ? JSON.parse(data) : [];
+  async getOrders(): Promise<Order[]> {
+    return fetchAllOrders();
   }
 
   getSettings(): POSSettings {
@@ -834,106 +849,14 @@ class POSService {
     return data ? JSON.parse(data) : INITIAL_SETTINGS;
   }
 
-  // Order Number & Queue Generation
-  getNextOrderIdentifiers(): { id: string; queueNumber: string } {
-    const orders = this.getOrders();
-    let maxOrdNumber = 1024;
-    let maxQueueNumber = 24;
-
-    orders.forEach((o) => {
-      const ordMatch = o.id.match(/ORD-(\d+)/);
-      if (ordMatch) {
-        const num = parseInt(ordMatch[1], 10);
-        if (num > maxOrdNumber) maxOrdNumber = num;
-      }
-      const qMatch = o.queueNumber.match(/A-(\d+)/);
-      if (qMatch) {
-        const num = parseInt(qMatch[1], 10);
-        if (num > maxQueueNumber) maxQueueNumber = num;
-      }
-    });
-
-    const nextOrd = maxOrdNumber + 1;
-    const nextQ = maxQueueNumber + 1;
-    const queueStr = `A-${String(nextQ).padStart(3, '0')}`;
-    return {
-      id: `ORD-${nextOrd}`,
-      queueNumber: queueStr,
-    };
-  }
-
   // Create New Order (Dine-in or Take Away)
-  createOrder(params: {
-    orderType: 'dine_in' | 'take_away';
-    tableNumber?: string;
-    items: Order['items'];
-    paymentMethod: 'cash' | 'qris';
-    paymentStatus?: 'UNPAID' | 'PAID';
-    amountReceived?: number;
-    change?: number;
-    createdByRole: UserRole;
-    createdByName?: string;
-    customerNote?: string;
-    customOrderId?: string;
-    customQueueNumber?: string;
-  }): Order {
-    const { id, queueNumber } = this.getNextOrderIdentifiers();
-    const orderId = params.customOrderId || id;
-    const qNumber = params.customQueueNumber || queueNumber;
-
-    const subtotal = params.items.reduce((sum, item) => sum + item.subtotal, 0);
-    const settings = this.getSettings();
-    const tax = settings.enableTax ? Math.round(subtotal * (settings.taxRatePercent / 100)) : 0;
-    const totalAmount = subtotal + tax;
-
-    const paymentStatus = params.paymentStatus || (params.paymentMethod === 'qris' ? 'PAID' : 'UNPAID');
-    const nowStr = new Date().toISOString();
-
-    const payment: Payment = {
-      method: params.paymentMethod,
-      status: paymentStatus,
-      amountReceived: params.amountReceived,
-      change: params.change,
-      paidAt: paymentStatus === 'PAID' ? nowStr : undefined,
-      transactionRef: `${params.paymentMethod.toUpperCase()}-${orderId.replace('ORD-', '')}`,
-    };
-
-    const newOrder: Order = {
-      id: orderId,
-      queueNumber: qNumber,
-      orderType: params.orderType,
-      tableNumber: params.tableNumber,
-      items: params.items,
-      subtotal,
-      tax,
-      totalAmount,
-      payment,
-      kitchenStatus: 'WAITING',
-      statusHistory: [
-        {
-          status: 'WAITING',
-          timestamp: nowStr,
-          changedBy: params.createdByName || `${params.createdByRole}`,
-          note: 'Order created and sent to kitchen',
-        },
-      ],
-      createdAt: nowStr,
-      stockDeducted: false, // CRITICAL: Only deducted on COMPLETED!
-      createdByRole: params.createdByRole,
-      createdByName: params.createdByName,
-      estimatedCompletionMinutes: 12,
-      customerNote: params.customerNote,
-    };
-
-    const orders = this.getOrders();
-    orders.push(newOrder);
-    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
-    this.notify();
-    return newOrder;
+  async createOrder(params: CreateOrderParams): Promise<Order> {
+    return createOrderInDb(params);
   }
+
 
   // Update Payment Status (e.g., Cashier accepts cash or completes payment)
-  processPayment(
+  async processPayment(
     orderId: string,
     paymentUpdate: {
       status: 'PAID' | 'FAILED';
@@ -941,21 +864,8 @@ class POSService {
       change?: number;
       method?: 'cash' | 'qris';
     }
-  ): Order | undefined {
-    const orders = this.getOrders();
-    const order = orders.find((o) => o.id === orderId);
-    if (!order) return undefined;
-
-    const nowStr = new Date().toISOString();
-    order.payment = {
-      ...order.payment,
-      ...paymentUpdate,
-      paidAt: paymentUpdate.status === 'PAID' ? nowStr : order.payment.paidAt,
-    };
-
-    localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
-    this.notify();
-    return order;
+  ): Promise<Order | undefined> {
+    return updatePaymentInDb(orderId, paymentUpdate);
   }
 }
 
