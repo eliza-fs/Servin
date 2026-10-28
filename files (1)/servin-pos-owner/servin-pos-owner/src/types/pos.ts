@@ -84,7 +84,7 @@ export interface OrderDetail {
 
 export type PaymentMethod = 'cash' | 'qris';
 export type PaymentStatus = 'UNPAID' | 'PAID' | 'FAILED';
-export type KitchenStatus = 'WAITING' | 'COOKING' | 'READY' | 'COMPLETED';
+export type KitchenStatus = 'WAITING' | 'COOKING' | 'READY' | 'COMPLETED' | 'CANCELLED';
 
 export interface Payment {
   method: PaymentMethod;

@@ -833,8 +833,8 @@ class POSService {
   }
 
   // Analytics Helpers for Owner Dashboard
-  getSalesAnalytics() {
-    const orders = this.getOrders();
+  getSalesAnalytics(ordersInput?: Order[]) {
+    const orders = ordersInput ?? this.getOrders();
     const menuItems = this.getMenuItems();
     const paidCompletedOrders = orders.filter((o) => o.payment.status === 'PAID');
 
@@ -929,8 +929,8 @@ class POSService {
   }
 
   // Export Sales to CSV
-  exportSalesCSV(): string {
-    const orders = this.getOrders();
+  exportSalesCSV(ordersInput?: Order[]): string {
+    const orders = ordersInput ?? this.getOrders();
     const headers = ['Order ID', 'Queue', 'Type', 'Table', 'Created At', 'Items Summary', 'Subtotal', 'Tax', 'Total Amount', 'Payment Method', 'Payment Status', 'Kitchen Status', 'Stock Deducted'];
     
     const rows = orders.map((o) => {
