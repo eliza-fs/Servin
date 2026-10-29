@@ -221,9 +221,9 @@ export const AdminView: React.FC = () => {
             </div>
             <button
               onClick={() => openEditMenuItem()}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-heading font-bold hover:bg-slate-800 shadow-xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand text-white text-xs font-heading font-bold hover:bg-brand-strong shadow-xs cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5 text-amber-400" />
+              <Plus className="w-3.5 h-3.5 text-white" />
               <span>Add Menu Item</span>
             </button>
           </div>
@@ -365,9 +365,9 @@ export const AdminView: React.FC = () => {
                   costPerUnit: 50,
                 })
               }
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-heading font-bold hover:bg-slate-800 shadow-xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand text-white text-xs font-heading font-bold hover:bg-brand-strong shadow-xs cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5 text-amber-400" />
+              <Plus className="w-3.5 h-3.5 text-white" />
               <span>Add Raw Ingredient</span>
             </button>
           </div>
@@ -410,7 +410,7 @@ export const AdminView: React.FC = () => {
                             notes: '',
                           })
                         }
-                        className="px-2.5 py-1 rounded-lg bg-slate-900 text-white font-semibold text-[11px] hover:bg-slate-800 cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-brand text-white font-semibold text-[11px] hover:bg-brand-strong cursor-pointer"
                       >
                         Adjust Stock
                       </button>
@@ -545,9 +545,9 @@ export const AdminView: React.FC = () => {
                   isActive: true,
                 })
               }
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-heading font-bold hover:bg-slate-800 shadow-xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand text-white text-xs font-heading font-bold hover:bg-brand-strong shadow-xs cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5 text-amber-400" />
+              <Plus className="w-3.5 h-3.5 text-white" />
               <span>Add Staff Member</span>
             </button>
           </div>
@@ -559,7 +559,7 @@ export const AdminView: React.FC = () => {
                 className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex flex-col justify-between space-y-3"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-base overflow-hidden">
+                  <div className="w-12 h-12 rounded-xl bg-brand text-white flex items-center justify-center font-bold text-base overflow-hidden">
                     {u.avatar ? (
                       <img src={u.avatar} alt={u.name} className="w-full h-full object-cover" />
                     ) : (
@@ -611,9 +611,9 @@ export const AdminView: React.FC = () => {
             </div>
             <button
               onClick={() => setEditingCategory({ name: '', icon: 'utensils', order: categories.length + 1 })}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-heading font-bold hover:bg-slate-800 shadow-xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand text-white text-xs font-heading font-bold hover:bg-brand-strong shadow-xs cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5 text-amber-400" />
+              <Plus className="w-3.5 h-3.5 text-white" />
               <span>Add Category</span>
             </button>
           </div>
@@ -669,7 +669,7 @@ export const AdminView: React.FC = () => {
                 type="text"
                 value={settings.restaurantName}
                 onChange={(e) => posService.updateSettings({ restaurantName: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-slate-900"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-brand-strong"
               />
             </div>
 
@@ -679,7 +679,7 @@ export const AdminView: React.FC = () => {
                 type="text"
                 value={settings.address}
                 onChange={(e) => posService.updateSettings({ address: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-slate-900"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-brand-strong"
               />
             </div>
 
@@ -689,7 +689,7 @@ export const AdminView: React.FC = () => {
                 type="text"
                 value={settings.phone}
                 onChange={(e) => posService.updateSettings({ phone: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-slate-900"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-brand-strong"
               />
             </div>
 
@@ -732,7 +732,7 @@ export const AdminView: React.FC = () => {
                     type="text"
                     value={editingMenuItem.name || ''}
                     onChange={(e) => setEditingMenuItem({ ...editingMenuItem, name: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-slate-900"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-brand-strong"
                     placeholder="e.g. Iced Latte"
                   />
                 </div>
@@ -743,7 +743,7 @@ export const AdminView: React.FC = () => {
                     onChange={(e) =>
                       setEditingMenuItem({ ...editingMenuItem, categoryId: e.target.value })
                     }
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-slate-900 bg-white"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-brand-strong bg-white"
                   >
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -763,7 +763,7 @@ export const AdminView: React.FC = () => {
                     onChange={(e) =>
                       setEditingMenuItem({ ...editingMenuItem, price: Number(e.target.value) })
                     }
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold focus:ring-1 focus:ring-slate-900"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold focus:ring-1 focus:ring-brand-strong"
                   />
                 </div>
                 <div>
@@ -772,7 +772,7 @@ export const AdminView: React.FC = () => {
                     type="text"
                     value={editingMenuItem.image || ''}
                     onChange={(e) => setEditingMenuItem({ ...editingMenuItem, image: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-slate-900"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-brand-strong"
                   />
                 </div>
               </div>
@@ -785,7 +785,7 @@ export const AdminView: React.FC = () => {
                   onChange={(e) =>
                     setEditingMenuItem({ ...editingMenuItem, description: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-slate-900"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-brand-strong"
                 />
               </div>
 
@@ -853,7 +853,7 @@ export const AdminView: React.FC = () => {
                         addIngredientToRecipe(select.value, 15);
                       }
                     }}
-                    className="px-3 py-1.5 rounded-lg bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg bg-brand text-white font-bold text-xs hover:bg-brand-strong cursor-pointer"
                   >
                     + Add Ingredient
                   </button>
@@ -870,7 +870,7 @@ export const AdminView: React.FC = () => {
               </button>
               <button
                 onClick={handleSaveMenuItem}
-                className="px-5 py-2 rounded-xl bg-slate-900 text-white text-xs font-heading font-bold hover:bg-slate-800 cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-brand text-white text-xs font-heading font-bold hover:bg-brand-strong cursor-pointer"
               >
                 Save Product & Recipe
               </button>
@@ -957,7 +957,7 @@ export const AdminView: React.FC = () => {
               </button>
               <button
                 onClick={handleApplyStockAdjustment}
-                className="px-4 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-heading font-bold hover:bg-slate-800 cursor-pointer"
+                className="px-4 py-1.5 rounded-lg bg-brand text-white text-xs font-heading font-bold hover:bg-brand-strong cursor-pointer"
               >
                 Apply & Record Log
               </button>
@@ -1065,7 +1065,7 @@ export const AdminView: React.FC = () => {
               </button>
               <button
                 onClick={handleSaveIngredient}
-                className="px-4 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-heading font-bold cursor-pointer"
+                className="px-4 py-1.5 rounded-lg bg-brand text-white text-xs font-heading font-bold cursor-pointer"
               >
                 Save Ingredient
               </button>
@@ -1133,7 +1133,7 @@ export const AdminView: React.FC = () => {
               </button>
               <button
                 onClick={handleSaveUser}
-                className="px-4 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-heading font-bold cursor-pointer"
+                className="px-4 py-1.5 rounded-lg bg-brand text-white text-xs font-heading font-bold cursor-pointer"
               >
                 Save Member
               </button>
@@ -1176,7 +1176,7 @@ export const AdminView: React.FC = () => {
               </button>
               <button
                 onClick={handleSaveCategory}
-                className="px-4 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-heading font-bold cursor-pointer"
+                className="px-4 py-1.5 rounded-lg bg-brand text-white text-xs font-heading font-bold cursor-pointer"
               >
                 Save Category
               </button>

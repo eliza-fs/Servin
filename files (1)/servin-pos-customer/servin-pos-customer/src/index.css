@@ -46,3 +46,17 @@
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
 }
 
+
+/* Servin brand theme (light blue) */
+@theme {
+  --color-brand: #7EC8F8;
+  --color-brand-strong: #5AAFE6;
+  --color-brand-soft: #D9EEFF;
+  --color-canvas: #F7FBFF;
+  --color-ink: #2D3A4B;
+
+  --color-slate-50: #F7FBFF;
+  --color-slate-100: #EEF6FD;
+  --color-slate-200: #D9EEFF;
+  --color-slate-900: #2D3A4B;
+}

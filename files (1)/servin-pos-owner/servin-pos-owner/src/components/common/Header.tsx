@@ -42,8 +42,8 @@ export const Header: React.FC = () => {
       <div className="max-w-[1520px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
         {/* Zone 1: Brand Mark */}
         <div className="flex items-center gap-3 shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-[#111827] text-white flex items-center justify-center shadow-xs">
-            <Coffee className="w-5 h-5 text-amber-400" />
+          <div className="w-9 h-9 rounded-xl bg-brand text-white flex items-center justify-center shadow-xs">
+            <Coffee className="w-5 h-5 text-white" />
           </div>
           <div>
             <div className="flex items-baseline gap-2">

@@ -90,9 +90,9 @@ export const OwnerView: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportCSV}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-heading font-bold text-xs shadow-xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand hover:bg-brand-strong text-white font-heading font-bold text-xs shadow-xs transition-colors cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5 text-amber-400" />
+            <Download className="w-3.5 h-3.5 text-white" />
             <span>Export Sales CSV</span>
           </button>
         </div>
@@ -203,7 +203,7 @@ export const OwnerView: React.FC = () => {
 
               return (
                 <div key={h.hour} className="flex-1 flex flex-col items-center gap-1 group relative">
-                  <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute -top-11 bg-slate-900 text-white text-[10px] py-1 px-2 rounded-lg whitespace-nowrap z-20 transition-opacity font-mono shadow-md">
+                  <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute -top-11 bg-brand text-white text-[10px] py-1 px-2 rounded-lg whitespace-nowrap z-20 transition-opacity font-mono shadow-md">
                     <div className="font-bold">{h.hour} · {formatRupiah(h.revenue)}</div>
                     <div>{h.orderCount} order(s)</div>
                   </div>
@@ -212,7 +212,7 @@ export const OwnerView: React.FC = () => {
                     <div
                       style={{ height: `${Math.max(hasSales ? 8 : 0, heightPercent)}%` }}
                       className={`w-full rounded-t transition-all duration-500 ${
-                        hasSales ? 'bg-slate-900 group-hover:bg-amber-500' : 'bg-transparent'
+                        hasSales ? 'bg-brand group-hover:bg-brand-strong' : 'bg-transparent'
                       }`}
                     />
                   </div>
@@ -241,7 +241,7 @@ export const OwnerView: React.FC = () => {
 
           <div className="space-y-3 my-2">
             {analytics.categorySales.map((cat, idx) => {
-              const colors = ['bg-slate-900', 'bg-amber-500', 'bg-blue-600', 'bg-emerald-600'];
+              const colors = ['bg-brand', 'bg-brand-strong', 'bg-blue-600', 'bg-emerald-600'];
               const pct = analytics.totalRevenue > 0 ? Math.round((cat.revenue / analytics.totalRevenue) * 100) : 0;
               return (
                 <div key={cat.name} className="space-y-1 text-xs">
@@ -403,7 +403,7 @@ export const OwnerView: React.FC = () => {
                 placeholder="Search by ID or table..."
                 value={searchOrder}
                 onChange={(e) => setSearchOrder(e.target.value)}
-                className="px-3 py-1.5 pl-8 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-slate-900 focus:outline-none"
+                className="px-3 py-1.5 pl-8 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-brand-strong focus:outline-none"
               />
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2" />
             </div>

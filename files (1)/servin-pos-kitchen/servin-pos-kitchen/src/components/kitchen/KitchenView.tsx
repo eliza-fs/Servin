@@ -129,11 +129,11 @@ export const KitchenView: React.FC = () => {
             onClick={() => setSoundEnabled((v) => !v)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer ${
               soundEnabled
-                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                ? 'bg-brand text-white border-brand-strong shadow-xs'
                 : 'bg-white text-slate-500 border-slate-200'
             }`}
           >
-            {soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-amber-400" /> : <VolumeX className="w-3.5 h-3.5" />}
+            {soundEnabled ? <Volume2 className="w-3.5 h-3.5 text-white" /> : <VolumeX className="w-3.5 h-3.5" />}
             <span>Chime {soundEnabled ? 'ON' : 'MUTED'}</span>
           </button>
         </div>
@@ -141,7 +141,7 @@ export const KitchenView: React.FC = () => {
 
       {/* Floating Toast Notification */}
       {toastMessage && (
-        <div className="p-3.5 bg-slate-900 text-white rounded-xl shadow-xl flex items-center justify-between text-xs animate-in slide-in-from-top duration-200 border border-slate-700">
+        <div className="p-3.5 bg-brand text-white rounded-xl shadow-xl flex items-center justify-between text-xs animate-in slide-in-from-top duration-200 border border-slate-700">
           <div className="flex items-center gap-2.5">
             <PackageCheck className="w-4 h-4 text-emerald-400 shrink-0" />
             <span className="font-medium">{toastMessage}</span>
@@ -199,10 +199,10 @@ export const KitchenView: React.FC = () => {
                         }`}
                       >
                         {/* Ticket Top Bar */}
-                        <div className="p-3 bg-slate-900 text-white flex items-start justify-between gap-2">
+                        <div className="p-3 bg-brand text-white flex items-start justify-between gap-2">
                           <div>
                             <div className="flex items-baseline gap-2">
-                              <span className="font-heading font-black text-2xl text-amber-400">
+                              <span className="font-heading font-black text-2xl text-white">
                                 {order.queueNumber}
                               </span>
                               <span className="text-[11px] font-mono text-slate-400 font-medium">
@@ -225,7 +225,7 @@ export const KitchenView: React.FC = () => {
                             </div>
                           </div>
 
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-brand-strong text-slate-300">
                             {order.payment.status}
                           </span>
                         </div>
@@ -289,9 +289,9 @@ export const KitchenView: React.FC = () => {
                           {order.kitchenStatus === 'WAITING' && (
                             <button
                               onClick={() => handleUpdateStatus(order.id, 'COOKING')}
-                              className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-heading font-bold text-xs shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                              className="w-full py-2.5 rounded-xl bg-brand hover:bg-brand-strong text-white font-heading font-bold text-xs shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                             >
-                              <Flame className="w-4 h-4 text-amber-400" />
+                              <Flame className="w-4 h-4 text-white" />
                               <span>Start Cooking 🍳</span>
                             </button>
                           )}
@@ -309,7 +309,7 @@ export const KitchenView: React.FC = () => {
                           {order.kitchenStatus === 'READY' && (
                             <button
                               onClick={() => handleUpdateStatus(order.id, 'COMPLETED')}
-                              className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-heading font-bold text-xs shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                              className="w-full py-2.5 rounded-xl bg-brand hover:bg-brand-strong text-white font-heading font-bold text-xs shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                             >
                               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                               <span>Complete & Deduct Stock ✅</span>

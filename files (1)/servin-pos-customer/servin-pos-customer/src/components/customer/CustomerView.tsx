@@ -233,9 +233,9 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-28">
+    <div className="min-h-screen bg-canvas pb-28">
       {/* Hero Welcome Banner */}
-      <div className="relative bg-slate-900 text-white overflow-hidden">
+      <div className="relative bg-brand text-white overflow-hidden">
         <img
           src="/src/assets/images/servin_hero_cafe_1791009484438.jpg"
           alt="Servin Coffee & Kitchen"
@@ -247,7 +247,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold backdrop-blur-md border border-amber-500/30">
-                <MapPin className="w-3 h-3 text-amber-400" />
+                <MapPin className="w-3 h-3 text-white" />
                 <span>Table {tableNumber}</span>
               </span>
               <span className="text-xs text-slate-300">·</span>
@@ -266,7 +266,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
               onClick={() => {
                 document.getElementById('live-order-docket')?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition-colors shadow-lg cursor-pointer self-start sm:self-auto"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-strong text-slate-950 font-bold text-xs hover:bg-amber-400 transition-colors shadow-lg cursor-pointer self-start sm:self-auto"
             >
               <Clock className="w-4 h-4 text-slate-950 animate-spin" />
               <span>Track Active Queue {activeOrder.queueNumber}</span>
@@ -283,13 +283,13 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
             id="live-order-docket"
             className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
           >
-            <div className="bg-slate-900 text-white p-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="bg-brand text-white p-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold block">
                   Kitchen Display Status · Table {tableNumber}
                 </span>
                 <div className="flex items-baseline gap-2 mt-0.5">
-                  <span className="font-heading font-black text-2xl text-amber-400">
+                  <span className="font-heading font-black text-2xl text-white">
                     QUEUE {activeOrder.queueNumber}
                   </span>
                   <span className="text-xs text-slate-400 font-mono">({activeOrder.id})</span>
@@ -326,9 +326,9 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                       <div
                         className={`w-8 h-8 sm:w-10 sm:h-10 mx-auto rounded-full flex items-center justify-center font-bold text-xs transition-all ${
                           isCurrent
-                            ? 'bg-amber-500 text-slate-950 ring-4 ring-amber-200 shadow-sm'
+                            ? 'bg-brand-strong text-slate-950 ring-4 ring-amber-200 shadow-sm'
                             : isPassed
-                            ? 'bg-slate-900 text-white'
+                            ? 'bg-brand text-white'
                             : 'bg-white text-slate-400 border border-slate-300'
                         }`}
                       >
@@ -413,7 +413,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
               onClick={() => setSelectedCategory('all')}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 selectedCategory === 'all'
-                  ? 'bg-slate-900 text-white shadow-xs'
+                  ? 'bg-brand text-white shadow-xs'
                   : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
               }`}
             >
@@ -426,7 +426,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                 onClick={() => setSelectedCategory(cat.id)}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   selectedCategory === cat.id
-                    ? 'bg-slate-900 text-white shadow-xs'
+                    ? 'bg-brand text-white shadow-xs'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                 }`}
               >
@@ -486,7 +486,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                   <button
                     disabled={!item.isAvailable}
                     onClick={() => openCustomizer(item)}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 text-white font-semibold text-xs hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-brand text-white font-semibold text-xs hover:bg-brand-strong transition-colors cursor-pointer disabled:opacity-50"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add</span>
@@ -503,10 +503,10 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
         <div className="fixed bottom-4 left-4 right-4 max-w-md mx-auto z-40">
           <button
             onClick={() => setIsCartOpen(true)}
-            className="w-full py-3.5 px-5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white shadow-xl flex items-center justify-between cursor-pointer transition-transform hover:scale-[1.01]"
+            className="w-full py-3.5 px-5 rounded-2xl bg-brand hover:bg-brand-strong text-white shadow-xl flex items-center justify-between cursor-pointer transition-transform hover:scale-[1.01]"
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-sm">
+              <div className="w-9 h-9 rounded-xl bg-brand-strong text-slate-950 flex items-center justify-center font-bold text-sm">
                 {cartItemCount}
               </div>
               <div className="text-left">
@@ -516,7 +516,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="font-mono tabular-nums font-extrabold text-base text-amber-400">
+              <span className="font-mono tabular-nums font-extrabold text-base text-white">
                 {formatRupiah(cartSubtotal)}
               </span>
               <ChevronRight className="w-5 h-5 text-slate-400" />
@@ -558,7 +558,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                         onClick={() => setSelectedSize(sz.name)}
                         className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
                           selectedSize === sz.name
-                            ? 'border-slate-900 bg-slate-900 text-white shadow-xs'
+                            ? 'border-brand-strong bg-brand text-white shadow-xs'
                             : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700'
                         }`}
                       >
@@ -583,7 +583,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                         onClick={() => setSelectedSugar(lvl)}
                         className={`p-2 rounded-lg border text-center text-xs cursor-pointer transition-all ${
                           selectedSugar === lvl
-                            ? 'border-slate-900 bg-slate-100 font-bold text-slate-900'
+                            ? 'border-brand-strong bg-slate-100 font-bold text-slate-900'
                             : 'border-slate-200 hover:bg-slate-50 text-slate-600'
                         }`}
                       >
@@ -605,7 +605,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                         onClick={() => setSelectedIce(lvl)}
                         className={`p-2 rounded-lg border text-center text-xs cursor-pointer transition-all ${
                           selectedIce === lvl
-                            ? 'border-slate-900 bg-slate-100 font-bold text-slate-900'
+                            ? 'border-brand-strong bg-slate-100 font-bold text-slate-900'
                             : 'border-slate-200 hover:bg-slate-50 text-slate-600'
                         }`}
                       >
@@ -627,7 +627,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                         onClick={() => setSelectedSpicy(lvl)}
                         className={`p-2 rounded-lg border text-center text-xs cursor-pointer transition-all ${
                           selectedSpicy === lvl
-                            ? 'border-slate-900 bg-slate-100 font-bold text-slate-900'
+                            ? 'border-brand-strong bg-slate-100 font-bold text-slate-900'
                             : 'border-slate-200 hover:bg-slate-50 text-slate-600'
                         }`}
                       >
@@ -657,7 +657,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                           }}
                           className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
                             isSelected
-                              ? 'border-slate-900 bg-slate-50 font-semibold text-slate-900'
+                              ? 'border-brand-strong bg-slate-50 font-semibold text-slate-900'
                               : 'border-slate-200 hover:bg-slate-50 text-slate-700'
                           }`}
                         >
@@ -690,7 +690,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                   placeholder="e.g. Less sweet, extra ice, no peanuts..."
                   value={customNotes}
                   onChange={(e) => setCustomNotes(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-slate-900 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-strong focus:outline-none"
                 />
               </div>
 
@@ -707,7 +707,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                   <span className="font-bold text-sm w-5 text-center font-mono">{modalQuantity}</span>
                   <button
                     onClick={() => setModalQuantity((q) => q + 1)}
-                    className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold hover:bg-slate-800 cursor-pointer"
+                    className="w-8 h-8 rounded-lg bg-brand text-white flex items-center justify-center font-bold hover:bg-brand-strong cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
@@ -718,11 +718,11 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
             <div className="pt-3 border-t border-slate-100">
               <button
                 onClick={handleAddToCart}
-                className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-heading font-bold text-sm shadow-md transition-colors cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-xl bg-brand hover:bg-brand-strong text-white font-heading font-bold text-sm shadow-md transition-colors cursor-pointer flex items-center justify-center gap-2"
               >
                 <span>Add to Cart</span>
                 <span>·</span>
-                <span className="font-mono tabular-nums text-amber-400">
+                <span className="font-mono tabular-nums text-white">
                   {formatRupiah(calculateItemUnitPrice(selectedProduct) * modalQuantity)}
                 </span>
               </button>
@@ -813,7 +813,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                     <span className="font-bold w-4 text-center font-mono">{item.quantity}</span>
                     <button
                       onClick={() => updateCartItemQuantity(item.id, 1)}
-                      className="w-6 h-6 rounded bg-slate-900 text-white flex items-center justify-center font-bold"
+                      className="w-6 h-6 rounded bg-brand text-white flex items-center justify-center font-bold"
                     >
                       +
                     </button>
@@ -832,11 +832,11 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                   onClick={() => setPaymentMethod('qris')}
                   className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${
                     paymentMethod === 'qris'
-                      ? 'border-slate-900 bg-slate-900 text-white shadow-xs'
+                      ? 'border-brand-strong bg-brand text-white shadow-xs'
                       : 'border-slate-200 hover:bg-slate-50 text-slate-700'
                   }`}
                 >
-                  <QrCode className="w-5 h-5 text-amber-400" />
+                  <QrCode className="w-5 h-5 text-white" />
                   <span className="text-xs font-bold">QRIS Instant</span>
                 </button>
 
@@ -844,7 +844,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
                   onClick={() => setPaymentMethod('cash')}
                   className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${
                     paymentMethod === 'cash'
-                      ? 'border-slate-900 bg-slate-900 text-white shadow-xs'
+                      ? 'border-brand-strong bg-brand text-white shadow-xs'
                       : 'border-slate-200 hover:bg-slate-50 text-slate-700'
                   }`}
                 >
@@ -873,7 +873,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
             <button
               disabled={isCheckingOut || cart.length === 0}
               onClick={handlePlaceOrder}
-              className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-heading font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full py-3.5 rounded-xl bg-brand hover:bg-brand-strong text-white font-heading font-bold text-sm shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {isCheckingOut ? (
                 <span>Transmitting Order to Kitchen...</span>
@@ -915,7 +915,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
 
             <button
               onClick={() => setShowOrderSuccessModal(false)}
-              className="w-full py-2.5 rounded-xl bg-slate-900 text-white font-heading font-bold text-xs hover:bg-slate-800 transition-colors cursor-pointer"
+              className="w-full py-2.5 rounded-xl bg-brand text-white font-heading font-bold text-xs hover:bg-brand-strong transition-colors cursor-pointer"
             >
               Track Order Live
             </button>
