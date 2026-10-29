@@ -372,7 +372,7 @@ export const CashierView: React.FC = () => {
                   onClick={() => setOrderType('dine_in')}
                   className={`py-1.5 font-bold rounded-lg transition-all cursor-pointer ${
                     orderType === 'dine_in'
-                      ? 'bg-brand-strong text-slate-950 shadow-xs'
+                      ? 'bg-white text-slate-900 shadow-xs'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -382,7 +382,7 @@ export const CashierView: React.FC = () => {
                   onClick={() => setOrderType('take_away')}
                   className={`py-1.5 font-bold rounded-lg transition-all cursor-pointer ${
                     orderType === 'take_away'
-                      ? 'bg-brand-strong text-slate-950 shadow-xs'
+                      ? 'bg-white text-slate-900 shadow-xs'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
