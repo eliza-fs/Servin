@@ -237,7 +237,7 @@ export const CustomerView: React.FC<CustomerViewProps> = ({
       {/* Hero Welcome Banner */}
       <div className="relative bg-brand text-white overflow-hidden">
         <img
-          src="/src/assets/images/servin_hero_cafe_1791009484438.jpg"
+          src="/images/servin_hero_cafe_1791009484438.jpg"
           alt="Servin Coffee & Kitchen"
           className="absolute inset-0 w-full h-full object-cover opacity-35 filter brightness-90"
         />
