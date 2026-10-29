@@ -114,7 +114,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ allowedRoles, appTitle, chil
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] text-slate-500 text-sm">
+      <div className="min-h-screen flex items-center justify-center bg-canvas text-slate-500 text-sm">
         Loading...
       </div>
     );
@@ -125,14 +125,14 @@ export const AuthGate: React.FC<AuthGateProps> = ({ allowedRoles, appTitle, chil
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-canvas px-4">
       <form
         onSubmit={handleLogin}
         className="w-full max-w-sm bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4"
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#111827] text-white flex items-center justify-center">
-            <Coffee className="w-5 h-5 text-amber-400" />
+          <div className="w-10 h-10 rounded-xl bg-brand text-white flex items-center justify-center">
+            <Coffee className="w-5 h-5 text-white" />
           </div>
           <div>
             <p className="font-extrabold text-slate-900 leading-tight">SERVIN</p>
@@ -151,7 +151,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ allowedRoles, appTitle, chil
             autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-strong"
           />
         </div>
 
@@ -166,7 +166,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ allowedRoles, appTitle, chil
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-strong"
           />
         </div>
 
@@ -179,7 +179,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ allowedRoles, appTitle, chil
         <button
           type="submit"
           disabled={submitting}
-          className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#111827] text-white text-sm font-semibold py-2.5 hover:bg-slate-800 disabled:opacity-60 cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 rounded-lg bg-brand text-white text-sm font-semibold py-2.5 hover:bg-brand-strong disabled:opacity-60 cursor-pointer"
         >
           <Lock className="w-4 h-4" />
           {submitting ? 'Signing in...' : 'Sign in'}

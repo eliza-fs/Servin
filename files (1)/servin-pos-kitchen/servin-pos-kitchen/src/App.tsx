@@ -13,7 +13,7 @@ export default function App() {
   return (
     <AuthGate allowedRoles={['kitchen', 'admin']} appTitle="Kitchen Display">
       {(profile, logout) => (
-        <div className="min-h-screen bg-[#F8F9FA] text-[#111827] flex flex-col font-sans selection:bg-[#E0E7FF] selection:text-[#1E1B4B]">
+        <div className="min-h-screen bg-canvas text-ink flex flex-col font-sans selection:bg-brand-soft selection:text-ink">
           <Header profile={profile} onLogout={logout} />
 
           <main className="flex-1 pb-16">

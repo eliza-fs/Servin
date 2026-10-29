@@ -20,7 +20,7 @@ export const KitchenStatusBadge: React.FC<KitchenStatusBadgeProps> = ({ status, 
         <span
           className={`inline-flex items-center rounded-md bg-amber-500/10 text-amber-700 border border-amber-500/20 ${sizeClasses[size]}`}
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-strong animate-pulse" />
           <span>Waiting</span>
         </span>
       );

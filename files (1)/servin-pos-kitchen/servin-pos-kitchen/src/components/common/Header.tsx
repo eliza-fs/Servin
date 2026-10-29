@@ -54,8 +54,8 @@ export const Header: React.FC<HeaderProps> = ({ profile, onLogout }) => {
       <div className="max-w-[1520px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
         {/* Zone 1: Brand Mark */}
         <div className="flex items-center gap-3 shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-[#111827] text-white flex items-center justify-center shadow-xs">
-            <Coffee className="w-5 h-5 text-amber-400" />
+          <div className="w-9 h-9 rounded-xl bg-brand text-white flex items-center justify-center shadow-xs">
+            <Coffee className="w-5 h-5 text-white" />
           </div>
           <div>
             <div className="flex items-baseline gap-2">
@@ -80,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({ profile, onLogout }) => {
             </span>
             <span>Kitchen KDS</span>
             {activeOrdersCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-white animate-pulse">
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-brand-strong text-white animate-pulse">
                 {activeOrdersCount}
               </span>
             )}

@@ -286,7 +286,7 @@ export const CashierView: React.FC = () => {
                   placeholder="Search products by name or code..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-3.5 py-2 pl-9 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  className="w-full px-3.5 py-2 pl-9 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-strong"
                 />
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               </div>
@@ -296,7 +296,7 @@ export const CashierView: React.FC = () => {
                   onClick={() => setSelectedCategory('all')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap cursor-pointer transition-all ${
                     selectedCategory === 'all'
-                      ? 'bg-slate-900 text-white shadow-xs'
+                      ? 'bg-brand text-white shadow-xs'
                       : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                   }`}
                 >
@@ -308,7 +308,7 @@ export const CashierView: React.FC = () => {
                     onClick={() => setSelectedCategory(c.id)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap cursor-pointer transition-all ${
                       selectedCategory === c.id
-                        ? 'bg-slate-900 text-white shadow-xs'
+                        ? 'bg-brand text-white shadow-xs'
                         : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                     }`}
                   >
@@ -356,23 +356,23 @@ export const CashierView: React.FC = () => {
           {/* POS Register Slip (4 Cols) */}
           <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[580px]">
             {/* Header Ticket */}
-            <div className="p-4 bg-slate-900 text-white">
+            <div className="p-4 bg-brand text-white">
               <div className="flex items-center justify-between mb-3">
                 <span className="font-heading font-extrabold text-sm tracking-tight text-white">
                   Active Register Ticket
                 </span>
-                <span className="text-[11px] text-amber-400 font-mono">
+                <span className="text-[11px] text-white font-mono">
                   {cashierCart.length} item(s)
                 </span>
               </div>
 
               {/* Dine-in vs Take Away Switch */}
-              <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-800 rounded-xl text-xs">
+              <div className="grid grid-cols-2 gap-1.5 p-1 bg-brand-strong rounded-xl text-xs">
                 <button
                   onClick={() => setOrderType('dine_in')}
                   className={`py-1.5 font-bold rounded-lg transition-all cursor-pointer ${
                     orderType === 'dine_in'
-                      ? 'bg-amber-500 text-slate-950 shadow-xs'
+                      ? 'bg-white text-slate-900 shadow-xs'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -382,7 +382,7 @@ export const CashierView: React.FC = () => {
                   onClick={() => setOrderType('take_away')}
                   className={`py-1.5 font-bold rounded-lg transition-all cursor-pointer ${
                     orderType === 'take_away'
-                      ? 'bg-amber-500 text-slate-950 shadow-xs'
+                      ? 'bg-white text-slate-900 shadow-xs'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -399,7 +399,7 @@ export const CashierView: React.FC = () => {
                       type="text"
                       value={tableNumber}
                       onChange={(e) => setTableNumber(e.target.value)}
-                      className="w-full px-2 py-1 rounded bg-slate-800 border border-slate-700 text-white font-bold text-xs focus:outline-none"
+                      className="w-full px-2 py-1 rounded bg-brand-strong border border-slate-700 text-white font-bold text-xs focus:outline-none"
                     />
                   </div>
                 )}
@@ -410,7 +410,7 @@ export const CashierView: React.FC = () => {
                     placeholder="Guest name"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full px-2 py-1 rounded bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none placeholder:text-slate-500"
+                    className="w-full px-2 py-1 rounded bg-brand-strong border border-slate-700 text-white text-xs focus:outline-none placeholder:text-slate-500"
                   />
                 </div>
               </div>
@@ -468,7 +468,7 @@ export const CashierView: React.FC = () => {
                         <span className="w-5 text-center font-bold font-mono">{item.quantity}</span>
                         <button
                           onClick={() => updateCartQty(item.id, 1)}
-                          className="w-5 h-5 rounded bg-slate-900 text-white flex items-center justify-center font-bold"
+                          className="w-5 h-5 rounded bg-brand text-white flex items-center justify-center font-bold"
                         >
                           +
                         </button>
@@ -505,9 +505,9 @@ export const CashierView: React.FC = () => {
               <button
                 disabled={cashierCart.length === 0}
                 onClick={handleOpenPayment}
-                className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-heading font-bold text-sm shadow-md transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed mt-2"
+                className="w-full py-3 rounded-xl bg-brand hover:bg-brand-strong text-white font-heading font-bold text-sm shadow-md transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed mt-2"
               >
-                <CreditCard className="w-4 h-4 text-amber-400" />
+                <CreditCard className="w-4 h-4 text-white" />
                 <span>Process Payment ({formatRupiah(cartSubtotal)})</span>
               </button>
             </div>
@@ -764,7 +764,7 @@ export const CashierView: React.FC = () => {
                         onClick={() => setCustomSize(s.name)}
                         className={`p-2 rounded-lg border text-left cursor-pointer ${
                           customSize === s.name
-                            ? 'border-slate-900 bg-slate-900 text-white font-bold'
+                            ? 'border-brand-strong bg-brand text-white font-bold'
                             : 'border-slate-200 text-slate-700'
                         }`}
                       >
@@ -785,7 +785,7 @@ export const CashierView: React.FC = () => {
                         key={lvl}
                         onClick={() => setCustomSugar(lvl)}
                         className={`p-1.5 rounded border text-center text-xs cursor-pointer ${
-                          customSugar === lvl ? 'bg-slate-900 text-white font-bold' : 'border-slate-200'
+                          customSugar === lvl ? 'bg-brand text-white font-bold' : 'border-slate-200'
                         }`}
                       >
                         {lvl}
@@ -804,7 +804,7 @@ export const CashierView: React.FC = () => {
                         key={lvl}
                         onClick={() => setCustomIce(lvl)}
                         className={`p-1.5 rounded border text-center text-xs cursor-pointer ${
-                          customIce === lvl ? 'bg-slate-900 text-white font-bold' : 'border-slate-200'
+                          customIce === lvl ? 'bg-brand text-white font-bold' : 'border-slate-200'
                         }`}
                       >
                         {lvl}
@@ -821,7 +821,7 @@ export const CashierView: React.FC = () => {
                   placeholder="Special requests or allergies..."
                   value={customNotes}
                   onChange={(e) => setCustomNotes(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-slate-900"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-1 focus:ring-brand-strong"
                 />
               </div>
             </div>
@@ -835,7 +835,7 @@ export const CashierView: React.FC = () => {
               </button>
               <button
                 onClick={handleAddCustomizedToCart}
-                className="px-4 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 cursor-pointer"
+                className="px-4 py-1.5 rounded-lg bg-brand text-white text-xs font-semibold hover:bg-brand-strong cursor-pointer"
               >
                 Add to Ticket
               </button>
@@ -867,7 +867,7 @@ export const CashierView: React.FC = () => {
                   onClick={() => setPaymentMethod('cash')}
                   className={`p-3 rounded-xl border flex flex-col items-center gap-1 cursor-pointer transition-all ${
                     paymentMethod === 'cash'
-                      ? 'border-slate-900 bg-slate-900 text-white font-bold shadow-xs'
+                      ? 'border-brand-strong bg-brand text-white font-bold shadow-xs'
                       : 'border-slate-200 hover:bg-slate-50'
                   }`}
                 >
@@ -878,20 +878,20 @@ export const CashierView: React.FC = () => {
                   onClick={() => setPaymentMethod('qris')}
                   className={`p-3 rounded-xl border flex flex-col items-center gap-1 cursor-pointer transition-all ${
                     paymentMethod === 'qris'
-                      ? 'border-slate-900 bg-slate-900 text-white font-bold shadow-xs'
+                      ? 'border-brand-strong bg-brand text-white font-bold shadow-xs'
                       : 'border-slate-200 hover:bg-slate-50'
                   }`}
                 >
-                  <QrCode className="w-5 h-5 text-amber-400" />
+                  <QrCode className="w-5 h-5 text-white" />
                   <span>QRIS Dynamic</span>
                 </button>
               </div>
 
               {/* Total Due Display */}
-              <div className="p-4 rounded-xl bg-slate-900 text-white flex items-center justify-between">
+              <div className="p-4 rounded-xl bg-brand text-white flex items-center justify-between">
                 <div>
                   <span className="text-[10px] text-slate-400 uppercase font-semibold block">Total Due</span>
-                  <span className="font-mono tabular-nums font-black text-2xl text-amber-400">
+                  <span className="font-mono tabular-nums font-black text-2xl text-white">
                     {formatRupiah(cartSubtotal)}
                   </span>
                 </div>
@@ -910,7 +910,7 @@ export const CashierView: React.FC = () => {
                       type="number"
                       value={cashReceived || ''}
                       onChange={(e) => setCashReceived(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-mono text-base font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-mono text-base font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-strong"
                     />
                   </div>
 
@@ -975,7 +975,7 @@ export const CashierView: React.FC = () => {
               <button
                 disabled={paymentMethod === 'cash' && cashReceived < cartSubtotal}
                 onClick={handleFinalizePayment}
-                className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-heading font-bold hover:bg-slate-800 shadow-md transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                className="px-5 py-2.5 rounded-xl bg-brand text-white text-xs font-heading font-bold hover:bg-brand-strong shadow-md transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
               >
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 <span>Confirm & Send to Kitchen</span>
@@ -1058,7 +1058,7 @@ export const CashierView: React.FC = () => {
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
               placeholder="e.g. customer changed their mind"
-              className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-slate-900"
+              className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-brand-strong"
             />
 
             {cancelError && (
@@ -1181,7 +1181,7 @@ export const CashierView: React.FC = () => {
                   setShowReceiptModal(false);
                   setJustCompletedOrder(null);
                 }}
-                className="flex-1 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold cursor-pointer"
+                className="flex-1 py-2 rounded-xl bg-brand hover:bg-brand-strong text-white text-xs font-bold cursor-pointer"
               >
                 Close
               </button>

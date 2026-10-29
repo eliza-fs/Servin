@@ -191,7 +191,7 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({
           {pattern.hours.map((h) => {
             const pct = Math.round((h.avgPerDay / maxHour) * 100);
             const color =
-              h.level === 'peak' ? 'bg-amber-500' : h.level === 'quiet' ? 'bg-rose-300' : 'bg-slate-900';
+              h.level === 'peak' ? 'bg-brand-strong' : h.level === 'quiet' ? 'bg-rose-300' : 'bg-brand';
             return (
               <div
                 key={h.hour}
@@ -209,10 +209,10 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({
 
         <div className="flex flex-wrap gap-4 text-[11px] text-slate-500">
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded bg-amber-500" /> Peak
+            <span className="w-2.5 h-2.5 rounded bg-brand-strong" /> Peak
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded bg-slate-900" /> Normal
+            <span className="w-2.5 h-2.5 rounded bg-brand" /> Normal
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded bg-rose-300" /> Quiet
