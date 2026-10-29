@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { posService } from '../../services/posService';
 import { formatRupiah, formatNumber, formatDateFull } from '../../utils/formatters';
 import { StockStatusBadge, PaymentStatusBadge, KitchenStatusBadge } from '../common/StatusBadge';
+import type { Ingredient, Order } from '../../types/pos';
+import { fetchAllOrders, subscribeToOrders } from '../../services/ordersApi';
+import { fetchIngredients, fetchRecipeItems, type RecipeRow } from '../../services/inventoryApi';
+import { InsightsPanel } from './InsightsPanel';
 import {
   BarChart3,
   TrendingUp,
@@ -21,22 +25,41 @@ import {
 } from 'lucide-react';
 
 export const OwnerView: React.FC = () => {
-  const [analytics, setAnalytics] = useState(posService.getSalesAnalytics());
-  const [ingredients, setIngredients] = useState(posService.getIngredients());
-  const [orders, setOrders] = useState(posService.getOrders());
+  const [view, setView] = useState<'overview' | 'insights'>('overview');
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [recipes, setRecipes] = useState<RecipeRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'cash' | 'qris'>('all');
   const [searchOrder, setSearchOrder] = useState('');
 
-  const reloadData = () => {
-    setAnalytics(posService.getSalesAnalytics());
-    setIngredients(posService.getIngredients());
-    setOrders(posService.getOrders());
+  const analytics = useMemo(() => posService.getSalesAnalytics(orders), [orders]);
+
+  const reloadData = async () => {
+    try {
+      const [allOrders, ing, rec] = await Promise.all([
+        fetchAllOrders(),
+        fetchIngredients(),
+        fetchRecipeItems(),
+      ]);
+      // Cancelled orders are not part of sales analytics.
+      setOrders(allOrders.filter((o) => o.kitchenStatus !== 'CANCELLED'));
+      setIngredients(ing);
+      setRecipes(rec);
+      setLoadError('');
+    } catch (err) {
+      console.error('Failed to load dashboard data', err);
+      setLoadError('Could not load data from the database. Please refresh.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     reloadData();
-    const unsub = posService.subscribe(reloadData);
+    const unsub = subscribeToOrders(reloadData);
     return () => unsub();
   }, []);
 
@@ -58,7 +81,7 @@ export const OwnerView: React.FC = () => {
   ).length;
 
   const handleExportCSV = () => {
-    const csvContent = posService.exportSalesCSV();
+    const csvContent = posService.exportSalesCSV(orders);
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -97,6 +120,36 @@ export const OwnerView: React.FC = () => {
           </button>
         </div>
       </div>
+
+            {/* View switch */}
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200 w-fit">
+        {([
+          { id: 'overview', label: 'Overview' },
+          { id: 'insights', label: 'Market & Smart Insights' },
+        ] as const).map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setView(tab.id)}
+            className={
+              'px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ' +
+              (view === tab.id ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900')
+            }
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {loadError && (
+        <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+          {loadError}
+        </div>
+      )}
+
+      {view === 'insights' ? (
+        <InsightsPanel orders={orders} ingredients={ingredients} recipes={recipes} loading={loading} />
+      ) : (
+        <>
 
       {/* Top 6 KPI Metric Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
@@ -474,6 +527,8 @@ export const OwnerView: React.FC = () => {
           </table>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };
