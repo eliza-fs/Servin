@@ -133,3 +133,53 @@ export async function deleteIngredientInDb(id: string): Promise<void> {
   const { error } = await supabase.from('ingredients').delete().eq('id', id);
   if (error) throw new Error(error.message);
 }
+
+export interface IngredientInput {
+    id?: string;
+    name: string;
+    unit: Ingredient['unit'];
+    currentStock: number;
+    minStock: number;
+    costPerUnit: number;
+  }
+  
+  /** Creates a new ingredient or updates an existing one. Stock changes on existing ingredients are logged. */
+  export async function saveIngredientInDb(input: IngredientInput): Promise<string> {
+    const fields = {
+      name: input.name,
+      unit: input.unit,
+      min_stock: input.minStock,
+      cost_per_unit: input.costPerUnit,
+    };
+  
+    let existingId: string | null = null;
+    if (input.id) {
+      const { data, error } = await supabase
+        .from('ingredients')
+        .select('id')
+        .eq('id', input.id)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      existingId = data ? (data as { id: string }).id : null;
+    }
+  
+    if (!existingId) {
+      const newId = input.id ?? 'ing-' + Date.now().toString(36);
+      const { error } = await supabase.from('ingredients').insert({
+        id: newId,
+        ...fields,
+        current_stock: Math.max(0, input.currentStock),
+      });
+      if (error) throw new Error(error.message);
+      return newId;
+    }
+  
+    const { error } = await supabase
+      .from('ingredients')
+      .update({ ...fields, last_updated: new Date().toISOString() })
+      .eq('id', existingId);
+    if (error) throw new Error(error.message);
+  
+    await setStockInDb(existingId, input.currentStock, 'Manual Stock Adjustment', 'Edited from the ingredient form');
+    return existingId;
+  }

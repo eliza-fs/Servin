@@ -106,29 +106,37 @@ export const AdminView: React.FC = () => {
     setEditingCategory(null);
   };
 
-  const handleSaveIngredient = () => {
+  const handleSaveIngredient = async () => {
     if (!editingIngredient?.name || !editingIngredient?.unit) return;
-    posService.saveIngredient({
-      id: editingIngredient.id,
-      name: editingIngredient.name,
-      currentStock: Number(editingIngredient.currentStock) || 0,
-      minStock: Number(editingIngredient.minStock) || 0,
-      unit: editingIngredient.unit as UnitType,
-      costPerUnit: Number(editingIngredient.costPerUnit) || 0,
-    });
-    setEditingIngredient(null);
+    try {
+      await posService.saveIngredient({
+        id: editingIngredient.id,
+        name: editingIngredient.name,
+        currentStock: Number(editingIngredient.currentStock) || 0,
+        minStock: Number(editingIngredient.minStock) || 0,
+        unit: editingIngredient.unit as UnitType,
+        costPerUnit: Number(editingIngredient.costPerUnit) || 0,
+      });
+      setEditingIngredient(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to save the ingredient.');
+    }
   };
 
-  const handleApplyStockAdjustment = () => {
+  const handleApplyStockAdjustment = async () => {
     if (!stockAdjustModal) return;
-    posService.adjustIngredientStock(
-      stockAdjustModal.ingredient.id,
-      stockAdjustModal.newStock,
-      stockAdjustModal.reason,
-      'Admin Siti',
-      stockAdjustModal.notes || 'Manual stock reconciliation'
-    );
-    setStockAdjustModal(null);
+    try {
+      await posService.adjustIngredientStock(
+        stockAdjustModal.ingredient.id,
+        stockAdjustModal.newStock,
+        stockAdjustModal.reason,
+        'Admin Siti',
+        stockAdjustModal.notes || 'Manual stock reconciliation'
+      );
+      setStockAdjustModal(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to update the stock.');
+    }
   };
 
   const openEditMenuItem = (item?: MenuItem) => {
@@ -367,15 +375,15 @@ export const AdminView: React.FC = () => {
               </p>
             </div>
             <button
-              onClick={async () => {
-                if (confirm(`Delete ingredient "${ing.name}"?`)) {
-                  try {
-                    await posService.deleteIngredient(ing.id);
-                  } catch (err) {
-                    alert(err instanceof Error ? err.message : 'Failed to delete the ingredient.');
-                  }
-                }
-              }}
+              onClick={() =>
+                setEditingIngredient({
+                  name: '',
+                  unit: 'g',
+                  currentStock: 1000,
+                  minStock: 200,
+                  costPerUnit: 50,
+                })
+              }
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand text-white text-xs font-heading font-bold hover:bg-brand-strong shadow-xs cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5 text-white" />
@@ -433,9 +441,13 @@ export const AdminView: React.FC = () => {
                         <Edit2 className="w-3.5 h-3.5 inline" />
                       </button>
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           if (confirm(`Delete ingredient "${ing.name}"?`)) {
-                            posService.deleteIngredient(ing.id);
+                            try {
+                              await posService.deleteIngredient(ing.id);
+                            } catch (err) {
+                              alert(err instanceof Error ? err.message : 'Failed to delete the ingredient.');
+                            }
                           }
                         }}
                         className="p-1 rounded text-rose-600 hover:text-rose-800 cursor-pointer"

@@ -12,7 +12,7 @@ import {
   fetchInventoryLogsFromDb,
   setStockInDb,
   deleteIngredientInDb,
-  stockStatus,
+  saveIngredientInDb,
 } from './inventoryApi';
 
 import {
@@ -869,103 +869,32 @@ class POSService {
       return true;
     }
   
-    /** Copies live stock levels and the stock history from Supabase into the local cache. */
-    async syncInventoryFromDb(): Promise<void> {
-      const [dbIngredients, dbLogs] = await Promise.all([
-        fetchIngredientsFromDb(),
-        fetchInventoryLogsFromDb(),
-      ]);
-  
-      const local = this.getIngredients();
-      const dbById = new Map(dbIngredients.map((i) => [i.id, i]));
-  
-      // Stock level comes from the database. Name, minimum and cost stay as edited locally.
-      const merged = local.map((l) => {
-        const db = dbById.get(l.id);
-        if (!db) return l;
-        return {
-          ...l,
-          currentStock: db.currentStock,
-          lastUpdated: db.lastUpdated,
-          status: stockStatus(db.currentStock, l.minStock),
-        };
-      });
-  
-      dbIngredients.forEach((db) => {
-        if (!local.some((l) => l.id === db.id)) merged.push(db);
-      });
-  
-      localStorage.setItem(STORAGE_KEYS.INGREDIENTS, JSON.stringify(merged));
-      localStorage.setItem(STORAGE_KEYS.INVENTORY_LOGS, JSON.stringify(dbLogs));
-      this.notify();
-    }
+  /** Copies ingredients and stock history from Supabase into the local cache (database is the source of truth). */
+  async syncInventoryFromDb(): Promise<void> {
+    const [dbIngredients, dbLogs] = await Promise.all([
+      fetchIngredientsFromDb(),
+      fetchInventoryLogsFromDb(),
+    ]);
+
+    // Never wipe the local cache if the database returned nothing (for example when not signed in).
+    if (dbIngredients.length === 0) return;
+
+    localStorage.setItem(STORAGE_KEYS.INGREDIENTS, JSON.stringify(dbIngredients));
+    localStorage.setItem(STORAGE_KEYS.INVENTORY_LOGS, JSON.stringify(dbLogs));
+    this.notify();
+  }
 
   // Ingredient CRUD
-  saveIngredient(ingredient: Partial<Ingredient> & { name: string; unit: UnitType }): Ingredient {
-    const ingredients = this.getIngredients();
-    const nowStr = new Date().toISOString();
-
-    if (ingredient.id) {
-      const idx = ingredients.findIndex((i) => i.id === ingredient.id);
-      if (idx !== -1) {
-        const currentStock = ingredient.currentStock ?? ingredients[idx].currentStock;
-        const minStock = ingredient.minStock ?? ingredients[idx].minStock;
-        let status: 'normal' | 'low_stock' | 'out_of_stock' = 'normal';
-        if (currentStock <= 0) status = 'out_of_stock';
-        else if (currentStock <= minStock) status = 'low_stock';
-
-        ingredients[idx] = {
-          ...ingredients[idx],
-          ...ingredient,
-          currentStock,
-          minStock,
-          status,
-          lastUpdated: nowStr,
-        };
-        localStorage.setItem(STORAGE_KEYS.INGREDIENTS, JSON.stringify(ingredients));
-        this.notify();
-        return ingredients[idx];
-      }
-    }
-
-    const currentStock = ingredient.currentStock ?? 0;
-    const minStock = ingredient.minStock ?? 0;
-    let status: 'normal' | 'low_stock' | 'out_of_stock' = 'normal';
-    if (currentStock <= 0) status = 'out_of_stock';
-    else if (currentStock <= minStock) status = 'low_stock';
-
-    const newIng: Ingredient = {
-      id: ingredient.id || `ing-${Date.now()}`,
-      name: ingredient.name,
-      currentStock,
-      minStock,
-      unit: ingredient.unit,
-      costPerUnit: ingredient.costPerUnit ?? 0,
-      status,
-      lastUpdated: nowStr,
-    };
-
-    ingredients.push(newIng);
-    localStorage.setItem(STORAGE_KEYS.INGREDIENTS, JSON.stringify(ingredients));
-
-    // Log initial stock
-    const logs = this.getInventoryLogs();
-    logs.unshift({
-      id: `log-${Date.now()}`,
-      timestamp: nowStr,
-      ingredientId: newIng.id,
-      ingredientName: newIng.name,
-      changeQuantity: currentStock,
-      beforeStock: 0,
-      afterStock: currentStock,
-      unit: newIng.unit,
-      reason: 'Initial',
-      performedBy: 'Admin',
-    });
-    localStorage.setItem(STORAGE_KEYS.INVENTORY_LOGS, JSON.stringify(logs));
-
-    this.notify();
-    return newIng;
+  async saveIngredient(input: {
+    id?: string;
+    name: string;
+    currentStock: number;
+    minStock: number;
+    unit: Ingredient['unit'];
+    costPerUnit: number;
+  }): Promise<void> {
+    await saveIngredientInDb(input);
+    await this.syncInventoryFromDb();
   }
 
   async deleteIngredient(id: string): Promise<boolean> {
