@@ -130,7 +130,7 @@ export const AdminView: React.FC = () => {
         categoryId: categories[0]?.id || '',
         price: 25000,
         description: '',
-        image: '/src/assets/images/artisan_iced_latte_1791009498944.jpg',
+        image: '/images/artisan_iced_latte_1791009498944.jpg',
         isAvailable: true,
         isActive: true,
       });
