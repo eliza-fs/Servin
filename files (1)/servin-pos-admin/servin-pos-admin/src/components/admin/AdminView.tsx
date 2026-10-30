@@ -73,6 +73,17 @@ export const AdminView: React.FC = () => {
     return () => unsub();
   }, []);
 
+  useEffect(() => {
+    const sync = () => {
+      posService
+        .syncInventoryFromDb()
+        .catch((err) => console.error('Failed to sync inventory', err));
+    };
+    sync();
+    const timer = window.setInterval(sync, 30000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const handleSaveUser = () => {
     if (!editingUser?.name || !editingUser?.username || !editingUser?.role) return;
     posService.saveUser({
@@ -356,15 +367,15 @@ export const AdminView: React.FC = () => {
               </p>
             </div>
             <button
-              onClick={() =>
-                setEditingIngredient({
-                  name: '',
-                  unit: 'g',
-                  currentStock: 1000,
-                  minStock: 200,
-                  costPerUnit: 50,
-                })
-              }
+              onClick={async () => {
+                if (confirm(`Delete ingredient "${ing.name}"?`)) {
+                  try {
+                    await posService.deleteIngredient(ing.id);
+                  } catch (err) {
+                    alert(err instanceof Error ? err.message : 'Failed to delete the ingredient.');
+                  }
+                }
+              }}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand text-white text-xs font-heading font-bold hover:bg-brand-strong shadow-xs cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5 text-white" />

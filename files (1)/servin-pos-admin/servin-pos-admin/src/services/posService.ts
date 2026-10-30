@@ -8,6 +8,14 @@
  */
 
 import {
+  fetchIngredientsFromDb,
+  fetchInventoryLogsFromDb,
+  setStockInDb,
+  deleteIngredientInDb,
+  stockStatus,
+} from './inventoryApi';
+
+import {
   User,
   Category,
   Ingredient,
@@ -848,54 +856,49 @@ class POSService {
     this.notify();
   }
 
-  // Manual Stock Adjustment by Admin
-  adjustIngredientStock(
-    ingredientId: string,
-    newStock: number,
-    reason: 'Manual Stock Adjustment' | 'Restock',
-    performedBy: string,
-    notes?: string
-  ): boolean {
-    const ingredients = this.getIngredients();
-    const ingredient = ingredients.find((i) => i.id === ingredientId);
-    if (!ingredient) return false;
-
-    const beforeStock = ingredient.currentStock;
-    const diff = newStock - beforeStock;
-    if (diff === 0) return true;
-
-    ingredient.currentStock = newStock;
-    ingredient.lastUpdated = new Date().toISOString();
-
-    if (ingredient.currentStock <= 0) {
-      ingredient.status = 'out_of_stock';
-    } else if (ingredient.currentStock <= ingredient.minStock) {
-      ingredient.status = 'low_stock';
-    } else {
-      ingredient.status = 'normal';
+    // Manual Stock Adjustment / Restock by Admin (stored in Supabase)
+    async adjustIngredientStock(
+      ingredientId: string,
+      newStock: number,
+      reason: 'Manual Stock Adjustment' | 'Restock',
+      _performedBy: string,
+      notes?: string
+    ): Promise<boolean> {
+      await setStockInDb(ingredientId, newStock, reason, notes);
+      await this.syncInventoryFromDb();
+      return true;
     }
-
-    const logs = this.getInventoryLogs();
-    const logEntry: InventoryLog = {
-      id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
-      timestamp: new Date().toISOString(),
-      ingredientId: ingredient.id,
-      ingredientName: ingredient.name,
-      changeQuantity: diff,
-      beforeStock,
-      afterStock: newStock,
-      unit: ingredient.unit,
-      reason,
-      referenceId: notes || 'ADMIN-ADJUST',
-      performedBy,
-    };
-    logs.unshift(logEntry);
-
-    localStorage.setItem(STORAGE_KEYS.INGREDIENTS, JSON.stringify(ingredients));
-    localStorage.setItem(STORAGE_KEYS.INVENTORY_LOGS, JSON.stringify(logs));
-    this.notify();
-    return true;
-  }
+  
+    /** Copies live stock levels and the stock history from Supabase into the local cache. */
+    async syncInventoryFromDb(): Promise<void> {
+      const [dbIngredients, dbLogs] = await Promise.all([
+        fetchIngredientsFromDb(),
+        fetchInventoryLogsFromDb(),
+      ]);
+  
+      const local = this.getIngredients();
+      const dbById = new Map(dbIngredients.map((i) => [i.id, i]));
+  
+      // Stock level comes from the database. Name, minimum and cost stay as edited locally.
+      const merged = local.map((l) => {
+        const db = dbById.get(l.id);
+        if (!db) return l;
+        return {
+          ...l,
+          currentStock: db.currentStock,
+          lastUpdated: db.lastUpdated,
+          status: stockStatus(db.currentStock, l.minStock),
+        };
+      });
+  
+      dbIngredients.forEach((db) => {
+        if (!local.some((l) => l.id === db.id)) merged.push(db);
+      });
+  
+      localStorage.setItem(STORAGE_KEYS.INGREDIENTS, JSON.stringify(merged));
+      localStorage.setItem(STORAGE_KEYS.INVENTORY_LOGS, JSON.stringify(dbLogs));
+      this.notify();
+    }
 
   // Ingredient CRUD
   saveIngredient(ingredient: Partial<Ingredient> & { name: string; unit: UnitType }): Ingredient {
@@ -965,9 +968,9 @@ class POSService {
     return newIng;
   }
 
-  deleteIngredient(id: string): boolean {
-    let ingredients = this.getIngredients();
-    ingredients = ingredients.filter((i) => i.id !== id);
+  async deleteIngredient(id: string): Promise<boolean> {
+    await deleteIngredientInDb(id);
+    const ingredients = this.getIngredients().filter((i) => i.id !== id);
     localStorage.setItem(STORAGE_KEYS.INGREDIENTS, JSON.stringify(ingredients));
     this.notify();
     return true;
